@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     DashboardView,
+    ObjectiveDetailView,
     IniciativaCreateView,
     InitiativeDetailView,
     InitiativeListView,
@@ -19,6 +20,7 @@ urlpatterns = [
     path("", DashboardView.as_view(), name="dashboard"),
     path("objetivos/", ObjectiveListView.as_view(), name="objective_list"),
     path("objetivos/novo/", ObjetivoCreateView.as_view(), name="objetivo_create"),
+    path("objetivos/<int:pk>/", ObjectiveDetailView.as_view(), name="objective_detail"),
     path("iniciativas/", InitiativeListView.as_view(), name="initiative_list"),
     path("iniciativas/nova/", IniciativaCreateView.as_view(), name="iniciativa_create"),
     path("iniciativas/<int:pk>/", InitiativeDetailView.as_view(), name="initiative_detail"),

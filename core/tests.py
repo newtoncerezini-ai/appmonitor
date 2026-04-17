@@ -235,4 +235,50 @@ class DependenciaIniciativaTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["total_com_dependencias"], 1)
 
+
+class ObjetivoDetalheTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome="Empresa Demo", slug="empresa-demo")
+        self.usuario = Usuario.objects.create_user(
+            username="objetivo_admin",
+            password="senha123forte",
+            empresa=self.empresa,
+            perfil=PerfilUsuario.ADMIN_EMPRESA,
+        )
+        self.objetivo = ObjetivoEstrategico.objects.create(
+            empresa=self.empresa,
+            nome="Crescimento",
+            descricao="Expandir a operacao com previsibilidade.",
+        )
+        self.iniciativa = Iniciativa.objects.create(
+            empresa=self.empresa,
+            objetivo=self.objetivo,
+            nome="Estruturar comercial",
+            responsavel=self.usuario,
+            status=StatusWorkflow.CONCLUIDO,
+        )
+        Tarefa.objects.create(
+            iniciativa=self.iniciativa,
+            nome="Mapear pipeline",
+            responsavel=self.usuario,
+            status=StatusWorkflow.CONCLUIDO,
+        )
+
+    def test_detalhe_do_objetivo_exibe_metricas(self):
+        self.client.login(username="objetivo_admin", password="senha123forte")
+        response = self.client.get(reverse("core:objective_detail", args=[self.objetivo.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["hero_value"], 100)
+        self.assertEqual(response.context["hero_secondary"], 1)
+        self.assertEqual(response.context["tarefas_total"], 1)
+
+    def test_lista_de_objetivos_expoe_iniciativas_concluidas(self):
+        self.client.login(username="objetivo_admin", password="senha123forte")
+        response = self.client.get(reverse("core:objective_list"))
+
+        self.assertEqual(response.status_code, 200)
+        objetivo = response.context["objetivos"][0]
+        self.assertEqual(objetivo.iniciativas_concluidas, 1)
+
 # Create your tests here.

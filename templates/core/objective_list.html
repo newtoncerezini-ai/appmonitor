@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Objetivos{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div>
-        <p class="eyebrow">Mapa Estratégico</p>
+        <p class="eyebrow">Mapa Estrategico</p>
         <h1>{{ page_title }}</h1>
         <p class="page-intro">{{ page_intro }}</p>
     </div>
@@ -29,7 +29,8 @@
 
 <section class="objective-grid">
     {% for objetivo in objetivos %}
-        <article class="objective-card">
+        <article class="objective-card objective-hover-card">
+            <a class="objective-card-link" href="{% url 'core:objective_detail' objetivo.pk %}" aria-label="Abrir detalhes do objetivo {{ objetivo.nome }}"></a>
             <div class="objective-card-head">
                 <div>
                     <h2>{{ objetivo.nome }}</h2>
@@ -37,12 +38,50 @@
                 </div>
                 <span class="status-pill neutral">{{ objetivo.total_iniciativas }} iniciativas</span>
             </div>
-            <p>{{ objetivo.descricao|default:"Sem descrição cadastrada." }}</p>
+            <p>{{ objetivo.descricao|default:"Sem descricao cadastrada." }}</p>
+            {% widthratio objetivo.iniciativas_concluidas objetivo.total_iniciativas|default:1 100 as progresso_objetivo %}
+            <div class="objective-progress">
+                <div class="progress-meta">
+                    <span>Progresso do objetivo</span>
+                    <strong>{{ progresso_objetivo }}%</strong>
+                </div>
+                <div class="progress-bar" aria-hidden="true">
+                    <span style="width: {{ progresso_objetivo }}%"></span>
+                </div>
+                <small>{{ objetivo.iniciativas_concluidas }} de {{ objetivo.total_iniciativas }} iniciativas concluidas</small>
+            </div>
+            <div class="objective-hover-panel">
+                <div class="objective-hover-head">
+                    <span class="eyebrow">Iniciativas ligadas</span>
+                    <strong>{{ objetivo.total_iniciativas }} iniciativa{{ objetivo.total_iniciativas|pluralize }}</strong>
+                </div>
+                <div class="objective-hover-stack">
+                    {% for iniciativa in objetivo.iniciativas.all|slice:":4" %}
+                        <div class="objective-hover-item">
+                            <div>
+                                <strong>{{ iniciativa.nome }}</strong>
+                                <span>{{ iniciativa.responsavel|default:"Responsavel nao definido" }}</span>
+                            </div>
+                            <span class="status-pill {% if iniciativa.status == 'concluido' %}success{% elif iniciativa.status == 'atrasado' %}risk{% elif iniciativa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                                {{ iniciativa.get_status_display }}
+                            </span>
+                        </div>
+                    {% empty %}
+                        <p class="muted">Nenhuma iniciativa ligada a este objetivo ainda.</p>
+                    {% endfor %}
+                    {% if objetivo.total_iniciativas > 4 %}
+                        <span class="hover-more">+ {{ objetivo.total_iniciativas|add:"-4" }} iniciativa{{ objetivo.total_iniciativas|add:"-4"|pluralize }} nesta carteira</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="objective-card-footer">
+                <span class="inline-link">Abrir objetivo</span>
+            </div>
         </article>
     {% empty %}
         <article class="empty-card">
             <h2>Nenhum objetivo cadastrado</h2>
-            <p>Crie o primeiro objetivo estratégico para organizar as iniciativas da empresa.</p>
+            <p>Crie o primeiro objetivo estrategico para organizar as iniciativas da empresa.</p>
         </article>
     {% endfor %}
 </section>

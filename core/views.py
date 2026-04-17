@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.http import Http404
 from django.utils import timezone
@@ -130,7 +130,19 @@ class ObjectiveListView(EmpresaContextMixin, ListView):
     def get_queryset(self):
         return (
             ObjetivoEstrategico.objects.filter(empresa=self.get_empresa())
-            .annotate(total_iniciativas=Count("iniciativas"))
+            .annotate(
+                total_iniciativas=Count("iniciativas"),
+                iniciativas_concluidas=Count(
+                    "iniciativas",
+                    filter=Q(iniciativas__status=StatusWorkflow.CONCLUIDO),
+                ),
+            )
+            .prefetch_related(
+                Prefetch(
+                    "iniciativas",
+                    queryset=Iniciativa.objects.select_related("responsavel").prefetch_related("tarefas").order_by("data_fim", "nome"),
+                )
+            )
             .order_by("nome")
         )
 
@@ -146,6 +158,53 @@ class ObjectiveListView(EmpresaContextMixin, ListView):
                 "hero_label": "Objetivos ativos",
                 "hero_secondary": iniciativas.count(),
                 "hero_secondary_label": "Iniciativas ligadas",
+            }
+        )
+        return context
+
+
+class ObjectiveDetailView(EmpresaContextMixin, DetailView):
+    model = ObjetivoEstrategico
+    template_name = "core/objective_detail.html"
+    context_object_name = "objetivo"
+    active_section = "objetivos"
+
+    def get_queryset(self):
+        return (
+            ObjetivoEstrategico.objects.filter(empresa=self.get_empresa())
+            .prefetch_related(
+                Prefetch(
+                    "iniciativas",
+                    queryset=Iniciativa.objects.select_related("responsavel").prefetch_related("tarefas__planos_acao").order_by("data_fim", "nome"),
+                )
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        iniciativas = list(self.object.iniciativas.all())
+        total_iniciativas = len(iniciativas)
+        iniciativas_concluidas = sum(1 for iniciativa in iniciativas if iniciativa.status == StatusWorkflow.CONCLUIDO)
+        tarefas_total = sum(iniciativa.tarefas.count() for iniciativa in iniciativas)
+        tarefas_concluidas = sum(
+            iniciativa.tarefas.filter(status=StatusWorkflow.CONCLUIDO).count() for iniciativa in iniciativas
+        )
+        progresso_iniciativas = int((iniciativas_concluidas / total_iniciativas) * 100) if total_iniciativas else 0
+        progresso_tarefas = int((tarefas_concluidas / tarefas_total) * 100) if tarefas_total else 0
+
+        context.update(
+            {
+                **self.get_base_context(),
+                "iniciativas": iniciativas,
+                "page_title": self.object.nome,
+                "page_intro": self.object.descricao or "Objetivo estrategico sem descricao detalhada cadastrada.",
+                "hero_value": progresso_iniciativas,
+                "hero_label": "Progresso das iniciativas",
+                "hero_secondary": total_iniciativas,
+                "hero_secondary_label": "Iniciativas ligadas",
+                "tarefas_total": tarefas_total,
+                "tarefas_concluidas": tarefas_concluidas,
+                "progresso_tarefas": progresso_tarefas,
             }
         )
         return context

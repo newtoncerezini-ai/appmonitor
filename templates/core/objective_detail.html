@@ -1,0 +1,113 @@
+﻿{% extends "base.html" %}
+
+{% block title %}{{ objetivo.nome }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Objetivo Estrategico</p>
+        <h1>{{ page_title }}</h1>
+        <p class="page-intro">{{ page_intro }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>{{ hero_label }}</span>
+            <strong>{{ hero_value }}%</strong>
+            <small>Percentual de iniciativas concluidas</small>
+        </div>
+        <div class="hero-metric">
+            <span>{{ hero_secondary_label }}</span>
+            <strong>{{ hero_secondary }}</strong>
+            <small>Frentes vinculadas a este objetivo</small>
+        </div>
+        <div class="hero-metric">
+            <span>Tarefas concluidas</span>
+            <strong>{{ tarefas_concluidas }}</strong>
+            <small>De {{ tarefas_total }} tarefas mapeadas</small>
+        </div>
+        <div class="hero-metric">
+            <span>Progresso das tarefas</span>
+            <strong>{{ progresso_tarefas }}%</strong>
+            <small>Execucao operacional consolidada</small>
+        </div>
+    </div>
+</section>
+
+<section class="section-toolbar">
+    <a class="ghost-button" href="{% url 'core:objective_list' %}">Voltar para objetivos</a>
+    {% if pode_gerenciar_execucao %}
+        <a class="primary-link" href="{% url 'core:iniciativa_create' %}">Nova iniciativa</a>
+    {% endif %}
+</section>
+
+<section class="detail-shell">
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Resumo Executivo</p>
+            <h3>Panorama do objetivo</h3>
+        </div>
+        <div class="meta-grid">
+            <div>
+                <span>Iniciativas</span>
+                <strong>{{ hero_secondary }}</strong>
+            </div>
+            <div>
+                <span>Tarefas</span>
+                <strong>{{ tarefas_total }}</strong>
+            </div>
+            <div>
+                <span>Conclusao das iniciativas</span>
+                <strong>{{ hero_value }}%</strong>
+            </div>
+            <div>
+                <span>Conclusao das tarefas</span>
+                <strong>{{ progresso_tarefas }}%</strong>
+            </div>
+        </div>
+    </article>
+
+    <section class="list-stack">
+        {% for iniciativa in iniciativas %}
+            <article class="ledger-card ledger-card-split">
+                <div class="ledger-main">
+                    <div class="ledger-title-row">
+                        <h2>{{ iniciativa.nome }}</h2>
+                        <span class="status-pill {% if iniciativa.status == 'concluido' %}success{% elif iniciativa.status == 'atrasado' %}risk{% elif iniciativa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                            {{ iniciativa.get_status_display }}
+                        </span>
+                    </div>
+                    <p class="ledger-description">{{ iniciativa.descricao|default:"Sem descricao cadastrada." }}</p>
+                    <div class="meta-grid">
+                        <div><span>Responsavel</span><strong>{{ iniciativa.responsavel|default:"Nao definido" }}</strong></div>
+                        <div><span>Inicio</span><strong>{{ iniciativa.data_inicio|default:"-" }}</strong></div>
+                        <div><span>Fim</span><strong>{{ iniciativa.data_fim|default:"-" }}</strong></div>
+                        <div><span>Tarefas</span><strong>{{ iniciativa.tarefas.count }}</strong></div>
+                    </div>
+                    <div class="ledger-actions">
+                        <a class="secondary-link" href="{% url 'core:initiative_detail' iniciativa.pk %}">Ver iniciativa</a>
+                        {% if pode_gerenciar_execucao %}
+                            <a class="ghost-button" href="{% url 'core:tarefa_create' %}?iniciativa={{ iniciativa.pk }}">Adicionar tarefa</a>
+                        {% endif %}
+                    </div>
+                </div>
+                <aside class="ledger-side">
+                    <h3>Ultimas tarefas</h3>
+                    {% for tarefa in iniciativa.tarefas.all|slice:":3" %}
+                        <div class="side-item">
+                            <strong>{{ tarefa.nome }}</strong>
+                            <span>{{ tarefa.get_status_display }}</span>
+                        </div>
+                    {% empty %}
+                        <p class="muted">Nenhuma tarefa cadastrada.</p>
+                    {% endfor %}
+                </aside>
+            </article>
+        {% empty %}
+            <article class="empty-card">
+                <h2>Nenhuma iniciativa ligada</h2>
+                <p>Este objetivo ainda nao possui iniciativas associadas.</p>
+            </article>
+        {% endfor %}
+    </section>
+</section>
+{% endblock %}

@@ -785,6 +785,154 @@ h4,
     grid-column: span 6;
     padding: 2rem;
     min-height: 18rem;
+    position: relative;
+    overflow: visible;
+}
+
+.objective-hover-card {
+    transition: transform 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.objective-hover-card:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 32px 58px rgba(0, 17, 58, 0.14);
+}
+
+.objective-hover-panel {
+    position: absolute;
+    left: 1.4rem;
+    right: 1.4rem;
+    bottom: 1.4rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(8, 23, 56, 0.98), rgba(13, 31, 70, 0.96));
+    color: #eef4ff;
+    border: 1px solid rgba(219, 232, 255, 0.12);
+    box-shadow: 0 22px 44px rgba(0, 17, 58, 0.2);
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(3px);
+    pointer-events: none;
+    transition: opacity 240ms ease, transform 240ms ease, filter 240ms ease;
+}
+
+.objective-hover-card:hover .objective-hover-panel,
+.objective-hover-card:focus-within .objective-hover-panel {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+}
+
+.objective-card-link {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    border-radius: inherit;
+}
+
+.objective-card > *:not(.objective-card-link) {
+    position: relative;
+    z-index: 2;
+}
+
+.objective-progress {
+    display: grid;
+    gap: 0.55rem;
+    margin-top: 1.5rem;
+}
+
+.progress-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.progress-meta span,
+.objective-progress small {
+    color: var(--muted);
+}
+
+.progress-meta span {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+}
+
+.progress-meta strong {
+    color: var(--primary);
+    font-family: "Manrope", sans-serif;
+    font-size: 1rem;
+}
+
+.progress-bar {
+    position: relative;
+    height: 0.7rem;
+    border-radius: 999px;
+    background: rgba(0, 17, 58, 0.08);
+    overflow: hidden;
+}
+
+.progress-bar span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #143b83 0%, #5f8cff 60%, #83fba5 100%);
+}
+
+.objective-card-footer {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.4rem;
+}
+
+.objective-hover-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.objective-hover-head .eyebrow {
+    color: rgba(131, 251, 165, 0.88);
+}
+
+.objective-hover-head strong {
+    color: #f7fbff;
+    font-size: 0.92rem;
+}
+
+.objective-hover-stack {
+    display: grid;
+    gap: 0.7rem;
+}
+
+.objective-hover-item {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    border-radius: 0.9rem;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.objective-hover-item strong {
+    display: block;
+    color: #f7fbff;
+}
+
+.objective-hover-item span {
+    color: rgba(238, 244, 255, 0.72);
+    font-size: 0.9rem;
+}
+
+.hover-more {
+    color: rgba(238, 244, 255, 0.7);
+    font-size: 0.84rem;
+    font-weight: 700;
 }
 
 .objective-card-head,
