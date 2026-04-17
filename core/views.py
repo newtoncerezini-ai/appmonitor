@@ -221,6 +221,14 @@ class InitiativeListView(EmpresaContextMixin, ListView):
             Iniciativa.objects.select_related("objetivo", "responsavel")
             .filter(empresa=self.get_empresa())
             .prefetch_related("tarefas", "dependencias")
+            .annotate(
+                total_tarefas=Count("tarefas", distinct=True),
+                tarefas_concluidas=Count(
+                    "tarefas",
+                    filter=Q(tarefas__status=StatusWorkflow.CONCLUIDO),
+                    distinct=True,
+                ),
+            )
             .order_by("data_fim", "nome")
         )
         status = self.request.GET.get("status")
@@ -381,11 +389,22 @@ class InitiativeDetailView(EmpresaContextMixin, DetailView):
         concluidas = tarefas.filter(status=StatusWorkflow.CONCLUIDO).count()
         total = tarefas.count()
         progresso = int((concluidas / total) * 100) if total else 0
+        planos_total = PlanoAcao.objects.filter(tarefa__iniciativa=self.object).count()
+        planos_concluidos = PlanoAcao.objects.filter(
+            tarefa__iniciativa=self.object,
+            status=StatusWorkflow.CONCLUIDO,
+        ).count()
+        progresso_planos = int((planos_concluidos / planos_total) * 100) if planos_total else 0
         context.update(
             {
                 **self.get_base_context(),
                 "tarefas": tarefas,
                 "progresso": progresso,
+                "tarefas_total": total,
+                "tarefas_concluidas": concluidas,
+                "planos_total": planos_total,
+                "planos_concluidos": planos_concluidos,
+                "progresso_planos": progresso_planos,
             }
         )
         return context

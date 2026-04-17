@@ -1,11 +1,11 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Iniciativas{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div>
-        <p class="eyebrow">Gestão de Iniciativas</p>
+        <p class="eyebrow">Gestao de Iniciativas</p>
         <h1>{{ page_title }}</h1>
         <p class="page-intro">{{ page_intro }}</p>
     </div>
@@ -19,7 +19,7 @@
             <strong>{{ hero_secondary }}</strong>
         </div>
         <div class="hero-metric">
-            <span>Com dependências</span>
+            <span>Com dependencias</span>
             <strong>{{ total_com_dependencias }}</strong>
         </div>
     </div>
@@ -38,7 +38,7 @@
             </select>
         </div>
         <div class="filter-group">
-            <label for="responsavel">Responsável</label>
+            <label for="responsavel">Responsavel</label>
             <select name="responsavel" id="responsavel" onchange="this.form.submit()">
                 <option value="">Todos</option>
                 {% for responsavel in responsaveis_filtro %}
@@ -49,10 +49,10 @@
         <div class="filter-group">
             <label for="janela">Vencimento</label>
             <select name="janela" id="janela" onchange="this.form.submit()">
-                <option value="">Qualquer período</option>
-                <option value="7" {% if selected_janela == '7' %}selected{% endif %}>Próxima semana</option>
-                <option value="15" {% if selected_janela == '15' %}selected{% endif %}>Próximos 15 dias</option>
-                <option value="30" {% if selected_janela == '30' %}selected{% endif %}>Próximo mês</option>
+                <option value="">Qualquer periodo</option>
+                <option value="7" {% if selected_janela == '7' %}selected{% endif %}>Proxima semana</option>
+                <option value="15" {% if selected_janela == '15' %}selected{% endif %}>Proximos 15 dias</option>
+                <option value="30" {% if selected_janela == '30' %}selected{% endif %}>Proximo mes</option>
             </select>
         </div>
         <div class="view-switch">
@@ -79,14 +79,15 @@
                 </div>
                 <div class="kanban-stack">
                     {% for iniciativa in coluna.items %}
-                        <a class="kanban-card" href="{% url 'core:initiative_detail' iniciativa.pk %}">
+                        <a class="kanban-card initiative-hover-card" href="{% url 'core:initiative_detail' iniciativa.pk %}">
                             <strong>{{ iniciativa.nome }}</strong>
                             <span>{{ iniciativa.objetivo.nome }}</span>
-                            <span>Responsável: {{ iniciativa.responsavel|default:"Não definido" }}</span>
+                            <span>Responsavel: {{ iniciativa.responsavel|default:"Nao definido" }}</span>
                             <span>Fim: {{ iniciativa.data_fim|default:"-" }}</span>
-                            {% if iniciativa.dependencias.all %}
-                                <span>Depende de {{ iniciativa.dependencias.count }} iniciativa(s)</span>
-                            {% endif %}
+                            {% widthratio iniciativa.tarefas_concluidas iniciativa.total_tarefas|default:1 100 as progresso_lista %}
+                            <div class="progress-bar" aria-hidden="true">
+                                <span style="width: {{ progresso_lista }}%"></span>
+                            </div>
                         </a>
                     {% empty %}
                         <div class="kanban-empty">Nenhuma iniciativa nesta coluna.</div>
@@ -111,7 +112,7 @@
                     <div class="gantt-row">
                         <div class="gantt-meta">
                             <strong>{{ row.item.nome }}</strong>
-                            <span>{{ row.item.responsavel|default:"Não definido" }}</span>
+                            <span>{{ row.item.responsavel|default:"Nao definido" }}</span>
                             {% if row.item.dependencias.all %}
                                 <span>Depende de {{ row.item.dependencias.count }} iniciativa(s)</span>
                             {% endif %}
@@ -131,14 +132,15 @@
         {% else %}
             <article class="empty-card">
                 <h2>Sem datas suficientes para o Gantt</h2>
-                <p>Defina data de início e data de fim nas iniciativas filtradas para visualizar o cronograma.</p>
+                <p>Defina data de inicio e data de fim nas iniciativas filtradas para visualizar o cronograma.</p>
             </article>
         {% endif %}
     </section>
 {% else %}
     <section class="list-stack">
         {% for iniciativa in iniciativas %}
-            <article class="ledger-card ledger-card-split">
+            <article class="ledger-card ledger-card-split initiative-hover-card initiative-ledger-card">
+                <a class="initiative-card-link" href="{% url 'core:initiative_detail' iniciativa.pk %}" aria-label="Abrir detalhes da iniciativa {{ iniciativa.nome }}"></a>
                 <div class="ledger-main">
                     <div class="ledger-title-row">
                         <h2>{{ iniciativa.nome }}</h2>
@@ -146,16 +148,27 @@
                             {{ iniciativa.get_status_display }}
                         </span>
                     </div>
-                    <p class="ledger-description">{{ iniciativa.descricao|default:"Sem descrição cadastrada." }}</p>
+                    <p class="ledger-description">{{ iniciativa.descricao|default:"Sem descricao cadastrada." }}</p>
                     <div class="meta-grid">
                         <div><span>Objetivo</span><strong>{{ iniciativa.objetivo.nome }}</strong></div>
-                        <div><span>Responsável</span><strong>{{ iniciativa.responsavel|default:"Não definido" }}</strong></div>
-                        <div><span>Início</span><strong>{{ iniciativa.data_inicio|default:"-" }}</strong></div>
+                        <div><span>Responsavel</span><strong>{{ iniciativa.responsavel|default:"Nao definido" }}</strong></div>
+                        <div><span>Inicio</span><strong>{{ iniciativa.data_inicio|default:"-" }}</strong></div>
                         <div><span>Fim</span><strong>{{ iniciativa.data_fim|default:"-" }}</strong></div>
+                    </div>
+                    {% widthratio iniciativa.tarefas_concluidas iniciativa.total_tarefas|default:1 100 as progresso_iniciativa %}
+                    <div class="objective-progress initiative-progress">
+                        <div class="progress-meta">
+                            <span>Progresso da iniciativa</span>
+                            <strong>{{ progresso_iniciativa }}%</strong>
+                        </div>
+                        <div class="progress-bar" aria-hidden="true">
+                            <span style="width: {{ progresso_iniciativa }}%"></span>
+                        </div>
+                        <small>{{ iniciativa.tarefas_concluidas }} de {{ iniciativa.total_tarefas }} tarefas concluidas</small>
                     </div>
                     {% if iniciativa.dependencias.all %}
                         <div class="dependency-list">
-                            <span>Dependências</span>
+                            <span>Dependencias</span>
                             <div class="dependency-tags">
                                 {% for dependencia in iniciativa.dependencias.all %}
                                     <a class="dependency-tag" href="{% url 'core:initiative_detail' dependencia.pk %}">{{ dependencia.nome }}</a>
@@ -181,6 +194,27 @@
                         <p class="muted">Nenhuma tarefa cadastrada.</p>
                     {% endfor %}
                 </aside>
+                <div class="initiative-hover-panel">
+                    <div class="objective-hover-head">
+                        <span class="eyebrow">Resumo rapido</span>
+                        <strong>{{ iniciativa.total_tarefas }} tarefa{{ iniciativa.total_tarefas|pluralize }}</strong>
+                    </div>
+                    <div class="objective-hover-stack">
+                        {% for tarefa in iniciativa.tarefas.all|slice:":4" %}
+                            <div class="objective-hover-item">
+                                <div>
+                                    <strong>{{ tarefa.nome }}</strong>
+                                    <span>{{ tarefa.responsavel|default:"Responsavel nao definido" }}</span>
+                                </div>
+                                <span class="status-pill {% if tarefa.status == 'concluido' %}success{% elif tarefa.status == 'atrasado' %}risk{% elif tarefa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                                    {{ tarefa.get_status_display }}
+                                </span>
+                            </div>
+                        {% empty %}
+                            <p class="muted">Nenhuma tarefa cadastrada para esta iniciativa.</p>
+                        {% endfor %}
+                    </div>
+                </div>
             </article>
         {% empty %}
             <article class="empty-card">

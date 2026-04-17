@@ -1,33 +1,59 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block title %}Iniciativa{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div>
-        <p class="eyebrow">Strategic Initiative</p>
+        <p class="eyebrow">Iniciativa Estrategica</p>
         <h1>{{ iniciativa.nome }}</h1>
         <p class="page-intro">{{ iniciativa.descricao|default:"Sem descricao cadastrada." }}</p>
     </div>
     <div class="hero-side">
         <div class="hero-metric">
-            <span>Progresso</span>
+            <span>Progresso das tarefas</span>
             <strong>{{ progresso }}%</strong>
+            <small>{{ tarefas_concluidas }} de {{ tarefas_total }} tarefas concluidas</small>
         </div>
         <div class="hero-metric">
             <span>Status</span>
             <strong>{{ iniciativa.get_status_display }}</strong>
+            <small>Leitura consolidada da iniciativa</small>
+        </div>
+        <div class="hero-metric">
+            <span>Planos concluidos</span>
+            <strong>{{ planos_concluidos }}</strong>
+            <small>De {{ planos_total }} etapas mapeadas</small>
+        </div>
+        <div class="hero-metric">
+            <span>Progresso dos planos</span>
+            <strong>{{ progresso_planos }}%</strong>
+            <small>Execucao das etapas da iniciativa</small>
         </div>
     </div>
 </section>
 
 <section class="detail-shell">
     <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Resumo Executivo</p>
+            <h3>Panorama da iniciativa</h3>
+        </div>
         <div class="meta-grid">
             <div><span>Objetivo</span><strong>{{ iniciativa.objetivo.nome }}</strong></div>
             <div><span>Responsavel</span><strong>{{ iniciativa.responsavel|default:"Nao definido" }}</strong></div>
             <div><span>Inicio</span><strong>{{ iniciativa.data_inicio|default:"-" }}</strong></div>
             <div><span>Fim</span><strong>{{ iniciativa.data_fim|default:"-" }}</strong></div>
+        </div>
+        <div class="initiative-summary-grid">
+            <div class="summary-metric initiative-summary-card">
+                <span>Conclusao das tarefas</span>
+                <strong>{{ progresso }}%</strong>
+            </div>
+            <div class="summary-metric initiative-summary-card">
+                <span>Conclusao dos planos</span>
+                <strong>{{ progresso_planos }}%</strong>
+            </div>
         </div>
         <div class="dependency-panels">
             <div class="dependency-panel">

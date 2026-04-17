@@ -281,4 +281,48 @@ class ObjetivoDetalheTests(TestCase):
         objetivo = response.context["objetivos"][0]
         self.assertEqual(objetivo.iniciativas_concluidas, 1)
 
+
+class IniciativaDetalheTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome="Empresa Demo", slug="empresa-demo")
+        self.usuario = Usuario.objects.create_user(
+            username="iniciativa_admin",
+            password="senha123forte",
+            empresa=self.empresa,
+            perfil=PerfilUsuario.ADMIN_EMPRESA,
+        )
+        self.objetivo = ObjetivoEstrategico.objects.create(
+            empresa=self.empresa,
+            nome="Operacao",
+            descricao="Melhorar a execucao.",
+        )
+        self.iniciativa = Iniciativa.objects.create(
+            empresa=self.empresa,
+            objetivo=self.objetivo,
+            nome="Estruturar processos",
+            responsavel=self.usuario,
+        )
+        self.tarefa = Tarefa.objects.create(
+            iniciativa=self.iniciativa,
+            nome="Mapear rotinas",
+            responsavel=self.usuario,
+            status=StatusWorkflow.CONCLUIDO,
+        )
+        PlanoAcao.objects.create(
+            tarefa=self.tarefa,
+            etapa="Levantar fluxo atual",
+            responsavel=self.usuario,
+            status=StatusWorkflow.CONCLUIDO,
+        )
+
+    def test_detalhe_da_iniciativa_exibe_metricas_de_tarefas_e_planos(self):
+        self.client.login(username="iniciativa_admin", password="senha123forte")
+        response = self.client.get(reverse("core:initiative_detail", args=[self.iniciativa.pk]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["tarefas_total"], 1)
+        self.assertEqual(response.context["tarefas_concluidas"], 1)
+        self.assertEqual(response.context["planos_total"], 1)
+        self.assertEqual(response.context["progresso_planos"], 100)
+
 # Create your tests here.
