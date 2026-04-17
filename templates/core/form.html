@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Cadastro interno</p>
+        <h1>{{ title }}</h1>
+        <p class="page-intro">Preencha os campos abaixo para registrar o item diretamente no sistema, sem precisar acessar o admin.</p>
+    </div>
+</section>
+
+<section class="detail-shell">
+    <form method="post" class="system-form">
+        {% csrf_token %}
+        {% for hidden in form.hidden_fields %}
+            {{ hidden }}
+        {% endfor %}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        {% for field in form %}
+            <div class="form-row">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == "dependencias" %}
+                    {% if field.subwidgets %}
+                        <div class="dependency-selector">
+                            {% for subwidget in field.subwidgets %}
+                                <label class="dependency-option" for="{{ subwidget.id_for_label }}">
+                                    {{ subwidget.tag }}
+                                    <span>{{ subwidget.choice_label }}</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-selector">Nenhuma dependência disponível no momento.</div>
+                    {% endif %}
+                {% else %}
+                    {{ field }}
+                {% endif %}
+                {% if field.help_text %}
+                    <small>{{ field.help_text }}</small>
+                {% endif %}
+                {% if field.errors %}
+                    <div class="field-errors">{{ field.errors }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <div class="form-actions">
+            <a class="ghost-button" href="{{ back_url }}">Voltar</a>
+            <button type="submit">{{ submit_label }}</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

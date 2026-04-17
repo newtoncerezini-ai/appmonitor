@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Tarefa{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Tarefa</p>
+        <h1>{{ tarefa.nome }}</h1>
+        <p class="page-intro">{{ tarefa.iniciativa.nome }} | {{ tarefa.get_status_display }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>Status</span>
+            <strong>{{ tarefa.get_status_display }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>Progresso</span>
+            <strong>{{ progresso }}%</strong>
+        </div>
+    </div>
+</section>
+
+<section class="detail-shell">
+    <article class="ledger-card">
+        <h3>Resumo</h3>
+        <div class="meta-grid">
+            <div>
+                <span>Responsavel</span>
+                <strong>{{ tarefa.responsavel|default:"Nao definido" }}</strong>
+            </div>
+            <div>
+                <span>Data de vencimento</span>
+                <strong>{{ tarefa.data_vencimento|default:"Nao definida" }}</strong>
+            </div>
+            <div>
+                <span>Objetivo estrategico</span>
+                <strong>{{ tarefa.iniciativa.objetivo.nome }}</strong>
+            </div>
+            <div>
+                <span>Iniciativa</span>
+                <strong>{{ tarefa.iniciativa.nome }}</strong>
+            </div>
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="section-toolbar">
+            <h2>Plano de acao</h2>
+            {% if pode_gerenciar_execucao %}
+                <a class="primary-link" href="{% url 'core:plano_acao_create_for_task' tarefa.pk %}">Adicionar etapa</a>
+            {% endif %}
+        </div>
+        {% if pode_gerenciar_execucao %}
+            
+        {% endif %}
+        <div class="table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>Etapa</th>
+                        <th>Responsavel</th>
+                        <th>Inicio previsto</th>
+                        <th>Fim previsto</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for etapa in planos_acao %}
+                        <tr>
+                            <td>
+                                <strong>{{ etapa.etapa }}</strong>
+                                <div class="cell-subtitle">{{ etapa.observacoes|default:"Sem observacoes." }}</div>
+                            </td>
+                            <td>{{ etapa.responsavel|default:"Nao definido" }}</td>
+                            <td>{{ etapa.data_inicio_prevista|default:"-" }}</td>
+                            <td>{{ etapa.data_fim_prevista|default:"-" }}</td>
+                            <td>
+                                <span class="status-pill {% if etapa.status == 'concluido' %}success{% elif etapa.status == 'atrasado' %}risk{% elif etapa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                                    {{ etapa.get_status_display }}
+                                </span>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">Nenhuma etapa cadastrada ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

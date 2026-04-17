@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Iniciativa{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Strategic Initiative</p>
+        <h1>{{ iniciativa.nome }}</h1>
+        <p class="page-intro">{{ iniciativa.descricao|default:"Sem descricao cadastrada." }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>Progresso</span>
+            <strong>{{ progresso }}%</strong>
+        </div>
+        <div class="hero-metric">
+            <span>Status</span>
+            <strong>{{ iniciativa.get_status_display }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="detail-shell">
+    <article class="ledger-card">
+        <div class="meta-grid">
+            <div><span>Objetivo</span><strong>{{ iniciativa.objetivo.nome }}</strong></div>
+            <div><span>Responsavel</span><strong>{{ iniciativa.responsavel|default:"Nao definido" }}</strong></div>
+            <div><span>Inicio</span><strong>{{ iniciativa.data_inicio|default:"-" }}</strong></div>
+            <div><span>Fim</span><strong>{{ iniciativa.data_fim|default:"-" }}</strong></div>
+        </div>
+        <div class="dependency-panels">
+            <div class="dependency-panel">
+                <span>Depende de</span>
+                <div class="dependency-tags">
+                    {% for dependencia in iniciativa.dependencias.all %}
+                        <a class="dependency-tag" href="{% url 'core:initiative_detail' dependencia.pk %}">{{ dependencia.nome }}</a>
+                    {% empty %}
+                        <span class="muted">Sem dependencias.</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="dependency-panel">
+                <span>Desbloqueia</span>
+                <div class="dependency-tags">
+                    {% for dependente in iniciativa.desbloqueia_iniciativas.all %}
+                        <a class="dependency-tag" href="{% url 'core:initiative_detail' dependente.pk %}">{{ dependente.nome }}</a>
+                    {% empty %}
+                        <span class="muted">Nenhuma iniciativa vinculada.</span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="section-toolbar">
+            <h2>Tarefas vinculadas</h2>
+            {% if pode_gerenciar_execucao %}
+                <a class="primary-link" href="{% url 'core:tarefa_create' %}?iniciativa={{ iniciativa.pk }}">Adicionar tarefa</a>
+            {% endif %}
+        </div>
+        <div class="list-stack compact">
+            {% for tarefa in tarefas %}
+                <a class="task-row" href="{% url 'core:tarefa_detail' tarefa.pk %}">
+                    <div class="task-main">
+                        <div class="task-title-row">
+                            <h3>{{ tarefa.nome }}</h3>
+                            <span class="status-pill {% if tarefa.status == 'concluido' %}success{% elif tarefa.status == 'atrasado' %}risk{% elif tarefa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                                {{ tarefa.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="meta-inline">
+                            <span><strong>Responsavel:</strong> {{ tarefa.responsavel|default:"Nao definido" }}</span>
+                            <span><strong>Vencimento:</strong> {{ tarefa.data_vencimento|default:"-" }}</span>
+                        </div>
+                    </div>
+                </a>
+            {% empty %}
+                <p class="muted">Nenhuma tarefa cadastrada para esta iniciativa.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

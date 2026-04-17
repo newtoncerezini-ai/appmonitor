@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Monitoramento{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/core/app.css?v=sidebar2">
+</head>
+<body>
+    {% if user.is_authenticated %}
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="topbar-brand">
+                    <div class="brand-mark">AL</div>
+                    <div>
+                        <p class="eyebrow">Strategic Authority</p>
+                        <a class="brand-title" href="{% url 'core:dashboard' %}">Consultoria X</a>
+                    </div>
+                </div>
+
+                <nav class="sidebar-nav">
+                    <a class="{% if active_section == 'dashboard' %}is-active{% endif %}" href="{% url 'core:dashboard' %}">
+                        <span class="nav-icon">◫</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a class="{% if active_section == 'objetivos' %}is-active{% endif %}" href="{% url 'core:objective_list' %}">
+                        <span class="nav-icon">◎</span>
+                        <span>Objetivos</span>
+                    </a>
+                    <a class="{% if active_section == 'iniciativas' %}is-active{% endif %}" href="{% url 'core:initiative_list' %}">
+                        <span class="nav-icon">◇</span>
+                        <span>Iniciativas</span>
+                    </a>
+                    <a class="{% if active_section == 'tarefas' %}is-active{% endif %}" href="{% url 'core:task_list' %}">
+                        <span class="nav-icon">✓</span>
+                        <span>Tarefas</span>
+                    </a>
+                </nav>
+            </div>
+
+            <div class="sidebar-bottom">
+                <span class="user-chip">{{ empresa.nome }}</span>
+                <span class="user-chip">{{ user.get_full_name|default:user.username }}</span>
+                <a class="ghost-link sidebar-ghost" href="/admin/">Admin</a>
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">Sair</button>
+                </form>
+            </div>
+        </aside>
+    {% endif %}
+
+    <main class="page-shell {% if user.is_authenticated %}with-sidebar{% endif %}">
+        {% if messages %}
+            <section class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">{{ message }}</div>
+                {% endfor %}
+            </section>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    {% if user.is_authenticated %}
+        <nav class="mobile-nav">
+            <a class="{% if active_section == 'dashboard' %}is-active{% endif %}" href="{% url 'core:dashboard' %}">Dashboard</a>
+            <a class="{% if active_section == 'objetivos' %}is-active{% endif %}" href="{% url 'core:objective_list' %}">Objetivos</a>
+            <a class="{% if active_section == 'iniciativas' %}is-active{% endif %}" href="{% url 'core:initiative_list' %}">Iniciativas</a>
+            <a class="{% if active_section == 'tarefas' %}is-active{% endif %}" href="{% url 'core:task_list' %}">Tarefas</a>
+        </nav>
+    {% endif %}
+</body>
+</html>

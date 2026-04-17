@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Tarefas{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Task Ledger</p>
+        <h1>{{ page_title }}</h1>
+        <p class="page-intro">{{ page_intro }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>{{ hero_label }}</span>
+            <strong>{{ hero_value }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>{{ hero_secondary_label }}</span>
+            <strong>{{ hero_secondary }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="section-toolbar split-toolbar">
+    <form method="get" class="filter-form">
+        <label for="iniciativa">Filtrar por iniciativa</label>
+        <select name="iniciativa" id="iniciativa" onchange="this.form.submit()">
+            <option value="">Todas</option>
+            {% for iniciativa in iniciativas_filtro %}
+                <option value="{{ iniciativa.pk }}" {% if iniciativa_selecionada == iniciativa.pk|stringformat:'s' %}selected{% endif %}>
+                    {{ iniciativa.nome }}
+                </option>
+            {% endfor %}
+        </select>
+    </form>
+    {% if pode_gerenciar_execucao %}
+        <a class="primary-link" href="{% url 'core:tarefa_create' %}">Nova tarefa</a>
+    {% endif %}
+</section>
+
+<section class="list-stack">
+    {% for tarefa in tarefas %}
+        <article class="task-row">
+            <div class="task-main">
+                <div class="task-title-row">
+                    <h2>{{ tarefa.nome }}</h2>
+                    <span class="status-pill {% if tarefa.status == 'concluido' %}success{% elif tarefa.status == 'atrasado' %}risk{% elif tarefa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                        {{ tarefa.get_status_display }}
+                    </span>
+                </div>
+                <div class="meta-inline">
+                    <span><strong>Iniciativa:</strong> {{ tarefa.iniciativa.nome }}</span>
+                    <span><strong>Responsavel:</strong> {{ tarefa.responsavel|default:"Nao definido" }}</span>
+                    <span><strong>Vencimento:</strong> {{ tarefa.data_vencimento|default:"-" }}</span>
+                </div>
+            </div>
+            <div class="task-actions">
+                <a class="primary-link" href="{% url 'core:tarefa_detail' tarefa.pk %}">Ver plano de acao</a>
+            </div>
+        </article>
+    {% empty %}
+        <article class="empty-card">
+            <h2>Nenhuma tarefa encontrada</h2>
+            <p>Ajuste o filtro ou crie novas tarefas para visualizar a execucao por responsavel.</p>
+        </article>
+    {% endfor %}
+</section>
+{% endblock %}

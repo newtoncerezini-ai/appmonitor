@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Objetivos{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Strategic Objectives</p>
+        <h1>{{ page_title }}</h1>
+        <p class="page-intro">{{ page_intro }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>{{ hero_label }}</span>
+            <strong>{{ hero_value }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>{{ hero_secondary_label }}</span>
+            <strong>{{ hero_secondary }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="section-toolbar">
+    {% if pode_gerenciar_execucao %}
+        <a class="primary-link" href="{% url 'core:objetivo_create' %}">Novo objetivo</a>
+    {% endif %}
+</section>
+
+<section class="objective-grid">
+    {% for objetivo in objetivos %}
+        <article class="objective-card">
+            <div class="objective-card-head">
+                <div>
+                    <h2>{{ objetivo.nome }}</h2>
+                    <div class="accent-line"></div>
+                </div>
+                <span class="status-pill neutral">{{ objetivo.total_iniciativas }} iniciativas</span>
+            </div>
+            <p>{{ objetivo.descricao|default:"Sem descricao cadastrada." }}</p>
+        </article>
+    {% empty %}
+        <article class="empty-card">
+            <h2>Nenhum objetivo cadastrado</h2>
+            <p>Crie o primeiro objetivo estrategico para organizar as iniciativas da empresa.</p>
+        </article>
+    {% endfor %}
+</section>
+{% endblock %}

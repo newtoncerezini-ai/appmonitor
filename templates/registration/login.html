@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block title %}Entrar{% endblock %}
+
+{% block content %}
+<section class="auth-card">
+    <div class="auth-copy">
+        <p class="eyebrow">Acesso seguro</p>
+        <h2>Monitore a execucao da consultoria com uma interface mais clara e profissional</h2>
+        <p class="muted">Centralize objetivos estrategicos, iniciativas, tarefas, etapas e alertas de vencimento por empresa.</p>
+        <div class="feature-list">
+            <div class="feature-item">
+                <strong>Status automaticos</strong>
+                <span>Tarefas e iniciativas evoluem sozinhas conforme a execucao.</span>
+            </div>
+            <div class="feature-item">
+                <strong>Visao por responsavel</strong>
+                <span>Cada colaborador acompanha o que precisa entregar primeiro.</span>
+            </div>
+            <div class="feature-item">
+                <strong>Base pronta para escalar</strong>
+                <span>Estrutura pensada para operar com varias empresas de consultoria.</span>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        <label for="id_username">Usuario</label>
+        {{ form.username }}
+        <label for="id_password">Senha</label>
+        {{ form.password }}
+        <button type="submit">Entrar</button>
+    </form>
+</section>
+{% endblock %}
