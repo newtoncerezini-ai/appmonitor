@@ -6,12 +6,14 @@ from django.urls import reverse
 
 from .models import (
     Empresa,
+    HistoricoAlteracao,
     Iniciativa,
     ObjetivoEstrategico,
     PerfilUsuario,
     PlanoAcao,
     StatusWorkflow,
     Tarefa,
+    TipoEntidadeHistorico,
     Usuario,
 )
 
@@ -281,6 +283,26 @@ class ObjetivoDetalheTests(TestCase):
         objetivo = response.context["objetivos"][0]
         self.assertEqual(objetivo.iniciativas_concluidas, 1)
 
+    def test_objetivo_pode_ser_editado_pela_tela_e_gera_historico(self):
+        self.client.login(username="objetivo_admin", password="senha123forte")
+        response = self.client.post(
+            reverse("core:objetivo_update", args=[self.objetivo.pk]),
+            {
+                "nome": "Crescimento comercial",
+                "descricao": "Nova descricao",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.objetivo.refresh_from_db()
+        self.assertEqual(self.objetivo.nome, "Crescimento comercial")
+        self.assertTrue(
+            HistoricoAlteracao.objects.filter(
+                entidade_tipo=TipoEntidadeHistorico.OBJETIVO,
+                entidade_id=self.objetivo.pk,
+            ).exists()
+        )
+
 
 class IniciativaDetalheTests(TestCase):
     def setUp(self):
@@ -324,5 +346,79 @@ class IniciativaDetalheTests(TestCase):
         self.assertEqual(response.context["tarefas_concluidas"], 1)
         self.assertEqual(response.context["planos_total"], 1)
         self.assertEqual(response.context["progresso_planos"], 100)
+
+    def test_gestor_pode_atualizar_iniciativa_pela_tela(self):
+        self.client.login(username="iniciativa_admin", password="senha123forte")
+        response = self.client.post(
+            reverse("core:iniciativa_update", args=[self.iniciativa.pk]),
+            {
+                "objetivo": self.objetivo.pk,
+                "nome": "Estruturar processos",
+                "descricao": "Descricao ajustada",
+                "status": StatusWorkflow.EM_ANDAMENTO,
+                "data_inicio": "",
+                "data_fim": "",
+                "responsavel": self.usuario.pk,
+                "dependencias": [],
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.iniciativa.refresh_from_db()
+        self.assertEqual(self.iniciativa.descricao, "Descricao ajustada")
+        self.assertTrue(
+            HistoricoAlteracao.objects.filter(
+                entidade_tipo=TipoEntidadeHistorico.INICIATIVA,
+                entidade_id=self.iniciativa.pk,
+                campo="Status",
+            ).exists()
+        )
+
+    def test_tarefa_e_plano_podem_ser_editados_pela_tela(self):
+        self.client.login(username="iniciativa_admin", password="senha123forte")
+        response_tarefa = self.client.post(
+            reverse("core:tarefa_update", args=[self.tarefa.pk]),
+            {
+                "iniciativa": self.iniciativa.pk,
+                "nome": "Mapear rotinas internas",
+                "responsavel": self.usuario.pk,
+                "data_vencimento": "",
+                "status": StatusWorkflow.EM_ANDAMENTO,
+            },
+        )
+        plano = self.tarefa.planos_acao.first()
+        response_plano = self.client.post(
+            reverse("core:plano_acao_update", args=[plano.pk]),
+            {
+                "tarefa": self.tarefa.pk,
+                "etapa": "Levantar fluxo atual",
+                "responsavel": self.usuario.pk,
+                "data_inicio_prevista": "",
+                "data_inicio_efetiva": "",
+                "data_fim_prevista": "",
+                "data_fim_efetiva": "",
+                "status": StatusWorkflow.EM_ANDAMENTO,
+                "observacoes": "Atualizado pela tela",
+            },
+        )
+
+        self.assertEqual(response_tarefa.status_code, 302)
+        self.assertEqual(response_plano.status_code, 302)
+        self.tarefa.refresh_from_db()
+        plano.refresh_from_db()
+        self.assertEqual(self.tarefa.nome, "Mapear rotinas internas")
+        self.assertEqual(plano.observacoes, "Atualizado pela tela")
+        self.assertTrue(
+            HistoricoAlteracao.objects.filter(
+                entidade_tipo=TipoEntidadeHistorico.TAREFA,
+                entidade_id=self.tarefa.pk,
+            ).exists()
+        )
+        self.assertTrue(
+            HistoricoAlteracao.objects.filter(
+                entidade_tipo=TipoEntidadeHistorico.PLANO_ACAO,
+                entidade_id=plano.pk,
+            ).exists()
+        )
 
 # Create your tests here.

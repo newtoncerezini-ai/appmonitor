@@ -23,7 +23,12 @@
 
 <section class="detail-shell">
     <article class="ledger-card">
-        <h3>Resumo</h3>
+        <div class="section-toolbar">
+            <h3>Resumo</h3>
+            {% if pode_gerenciar_execucao %}
+                <a class="primary-link" href="{% url 'core:tarefa_update' tarefa.pk %}">Editar tarefa</a>
+            {% endif %}
+        </div>
         <div class="meta-grid">
             <div>
                 <span>Responsavel</span>
@@ -41,6 +46,41 @@
                 <span>Iniciativa</span>
                 <strong>{{ tarefa.iniciativa.nome }}</strong>
             </div>
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Historico</p>
+            <h3>Ultimas alteracoes</h3>
+        </div>
+        <div class="table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Campo</th>
+                        <th>De</th>
+                        <th>Para</th>
+                        <th>Por</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in historico %}
+                        <tr>
+                            <td>{{ evento.criado_em|date:"d/m/Y H:i" }}</td>
+                            <td>{{ evento.campo }}</td>
+                            <td>{{ evento.valor_anterior }}</td>
+                            <td>{{ evento.valor_novo }}</td>
+                            <td>{{ evento.usuario|default:"Sistema" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">Nenhuma alteracao registrada ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </article>
 
@@ -63,6 +103,7 @@
                         <th>Inicio previsto</th>
                         <th>Fim previsto</th>
                         <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,10 +121,15 @@
                                     {{ etapa.get_status_display }}
                                 </span>
                             </td>
+                            <td>
+                                {% if pode_gerenciar_execucao %}
+                                    <a class="inline-link" href="{% url 'core:plano_acao_update' etapa.pk %}">Editar</a>
+                                {% endif %}
+                            </td>
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="5">Nenhuma etapa cadastrada ainda.</td>
+                            <td colspan="6">Nenhuma etapa cadastrada ainda.</td>
                         </tr>
                     {% endfor %}
                 </tbody>

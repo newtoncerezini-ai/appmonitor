@@ -7,10 +7,59 @@ from django.http import HttpResponseForbidden
 from django.http import Http404
 from django.utils import timezone
 from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView, DetailView, ListView, TemplateView
+from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
 from .forms import IniciativaForm, ObjetivoEstrategicoForm, PlanoAcaoForm, TarefaForm
-from .models import Iniciativa, ObjetivoEstrategico, PlanoAcao, StatusWorkflow, Tarefa, Usuario
+from .models import (
+    HistoricoAlteracao,
+    Iniciativa,
+    ObjetivoEstrategico,
+    PlanoAcao,
+    StatusWorkflow,
+    Tarefa,
+    TipoEntidadeHistorico,
+    Usuario,
+)
+
+
+def _format_history_value(instance, field_name, value):
+    field = instance._meta.get_field(field_name)
+    if value in (None, "", []):
+        return "-"
+    if field.many_to_many:
+        return ", ".join(str(item) for item in value) if value else "-"
+    if getattr(field, "choices", None):
+        return dict(field.choices).get(value, value)
+    if field.is_relation:
+        return str(value)
+    return str(value)
+
+
+def registrar_historico_alteracoes(instance, original, user, form, tipo_entidade):
+    if not form.changed_data:
+        return
+    for field_name in form.changed_data:
+        field = form.fields.get(field_name)
+        if field is None:
+            continue
+
+        if field_name == "dependencias":
+            anterior = list(original.dependencias.order_by("nome"))
+            novo = list(instance.dependencias.order_by("nome"))
+        else:
+            anterior = getattr(original, field_name)
+            novo = getattr(instance, field_name)
+
+        HistoricoAlteracao.objects.create(
+            empresa=user.empresa,
+            usuario=user,
+            entidade_tipo=tipo_entidade,
+            entidade_id=instance.pk,
+            entidade_nome=str(instance),
+            campo=field.label or field_name,
+            valor_anterior=_format_history_value(original, field_name, anterior),
+            valor_novo=_format_history_value(instance, field_name, novo),
+        )
 
 
 class EmpresaContextMixin(LoginRequiredMixin):
@@ -196,6 +245,11 @@ class ObjectiveDetailView(EmpresaContextMixin, DetailView):
             {
                 **self.get_base_context(),
                 "iniciativas": iniciativas,
+                "historico": HistoricoAlteracao.objects.filter(
+                    empresa=self.get_empresa(),
+                    entidade_tipo=TipoEntidadeHistorico.OBJETIVO,
+                    entidade_id=self.object.pk,
+                )[:12],
                 "page_title": self.object.nome,
                 "page_intro": self.object.descricao or "Objetivo estrategico sem descricao detalhada cadastrada.",
                 "hero_value": progresso_iniciativas,
@@ -399,6 +453,11 @@ class InitiativeDetailView(EmpresaContextMixin, DetailView):
             {
                 **self.get_base_context(),
                 "tarefas": tarefas,
+                "historico": HistoricoAlteracao.objects.filter(
+                    empresa=self.get_empresa(),
+                    entidade_tipo=TipoEntidadeHistorico.INICIATIVA,
+                    entidade_id=self.object.pk,
+                )[:12],
                 "progresso": progresso,
                 "tarefas_total": total,
                 "tarefas_concluidas": concluidas,
@@ -452,6 +511,48 @@ class BaseCreateView(GestaoExecucaoMixin, CreateView):
         return self.back_url
 
 
+class BaseUpdateView(GestaoExecucaoMixin, UpdateView):
+    template_name = "core/form.html"
+    title = ""
+    submit_label = "Salvar alteracoes"
+    success_message = "Atualizacao realizada com sucesso."
+    back_url = reverse_lazy("core:dashboard")
+    history_entity_type = ""
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        original = self.get_queryset().get(pk=self.object.pk)
+        response = super().form_valid(form)
+        registrar_historico_alteracoes(
+            self.object,
+            original,
+            self.request.user,
+            form,
+            self.history_entity_type,
+        )
+        messages.success(self.request, self.success_message)
+        return response
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                **self.get_base_context(),
+                "title": self.title,
+                "submit_label": self.submit_label,
+                "back_url": self.get_back_url(),
+            }
+        )
+        return context
+
+    def get_back_url(self):
+        return self.back_url
+
+
 class ObjetivoCreateView(BaseCreateView):
     model = ObjetivoEstrategico
     form_class = ObjetivoEstrategicoForm
@@ -465,6 +566,24 @@ class ObjetivoCreateView(BaseCreateView):
 
     def get_success_url(self):
         return reverse("core:dashboard")
+
+
+class ObjetivoUpdateView(BaseUpdateView):
+    model = ObjetivoEstrategico
+    form_class = ObjetivoEstrategicoForm
+    title = "Editar objetivo estrategico"
+    submit_label = "Salvar objetivo"
+    success_message = "Objetivo estrategico atualizado com sucesso."
+    history_entity_type = TipoEntidadeHistorico.OBJETIVO
+
+    def get_queryset(self):
+        return ObjetivoEstrategico.objects.filter(empresa=self.request.user.empresa)
+
+    def get_success_url(self):
+        return reverse("core:objective_detail", kwargs={"pk": self.object.pk})
+
+    def get_back_url(self):
+        return reverse("core:objective_detail", kwargs={"pk": self.object.pk})
 
 
 class IniciativaCreateView(BaseCreateView):
@@ -482,6 +601,24 @@ class IniciativaCreateView(BaseCreateView):
         return reverse("core:dashboard")
 
 
+class IniciativaUpdateView(BaseUpdateView):
+    model = Iniciativa
+    form_class = IniciativaForm
+    title = "Editar iniciativa"
+    submit_label = "Salvar iniciativa"
+    success_message = "Iniciativa atualizada com sucesso."
+    history_entity_type = TipoEntidadeHistorico.INICIATIVA
+
+    def get_queryset(self):
+        return Iniciativa.objects.filter(empresa=self.request.user.empresa)
+
+    def get_success_url(self):
+        return reverse("core:initiative_detail", kwargs={"pk": self.object.pk})
+
+    def get_back_url(self):
+        return reverse("core:initiative_detail", kwargs={"pk": self.object.pk})
+
+
 class TarefaCreateView(BaseCreateView):
     model = Tarefa
     form_class = TarefaForm
@@ -497,6 +634,24 @@ class TarefaCreateView(BaseCreateView):
         return initial
 
     def get_success_url(self):
+        return reverse("core:tarefa_detail", kwargs={"pk": self.object.pk})
+
+
+class TarefaUpdateView(BaseUpdateView):
+    model = Tarefa
+    form_class = TarefaForm
+    title = "Editar tarefa"
+    submit_label = "Salvar tarefa"
+    success_message = "Tarefa atualizada com sucesso."
+    history_entity_type = TipoEntidadeHistorico.TAREFA
+
+    def get_queryset(self):
+        return Tarefa.objects.filter(iniciativa__empresa=self.request.user.empresa)
+
+    def get_success_url(self):
+        return reverse("core:tarefa_detail", kwargs={"pk": self.object.pk})
+
+    def get_back_url(self):
         return reverse("core:tarefa_detail", kwargs={"pk": self.object.pk})
 
 
@@ -531,6 +686,24 @@ class PlanoAcaoCreateView(BaseCreateView):
         return reverse("core:dashboard")
 
 
+class PlanoAcaoUpdateView(BaseUpdateView):
+    model = PlanoAcao
+    form_class = PlanoAcaoForm
+    title = "Editar plano de acao"
+    submit_label = "Salvar etapa"
+    success_message = "Plano de acao atualizado com sucesso."
+    history_entity_type = TipoEntidadeHistorico.PLANO_ACAO
+
+    def get_queryset(self):
+        return PlanoAcao.objects.filter(tarefa__iniciativa__empresa=self.request.user.empresa)
+
+    def get_success_url(self):
+        return reverse("core:tarefa_detail", kwargs={"pk": self.object.tarefa_id})
+
+    def get_back_url(self):
+        return reverse("core:tarefa_detail", kwargs={"pk": self.object.tarefa_id})
+
+
 class TarefaDetailView(EmpresaContextMixin, DetailView):
     model = Tarefa
     template_name = "core/tarefa_detail.html"
@@ -550,6 +723,11 @@ class TarefaDetailView(EmpresaContextMixin, DetailView):
             {
                 **EmpresaContextMixin.get_base_context(self),
                 "pode_gerenciar_execucao": self.request.user.pode_gerenciar_execucao,
+                "historico": HistoricoAlteracao.objects.filter(
+                    empresa=self.request.user.empresa,
+                    entidade_tipo=TipoEntidadeHistorico.TAREFA,
+                    entidade_id=self.object.pk,
+                )[:12],
                 "progresso": int(
                     (
                         self.object.planos_acao.filter(status=StatusWorkflow.CONCLUIDO).count()

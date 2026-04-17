@@ -35,9 +35,14 @@
 
 <section class="detail-shell">
     <article class="ledger-card">
-        <div class="card-heading">
-            <p class="eyebrow">Resumo Executivo</p>
-            <h3>Panorama da iniciativa</h3>
+        <div class="section-toolbar">
+            <div class="card-heading">
+                <p class="eyebrow">Resumo Executivo</p>
+                <h3>Panorama da iniciativa</h3>
+            </div>
+            {% if pode_gerenciar_execucao %}
+                <a class="primary-link" href="{% url 'core:iniciativa_update' iniciativa.pk %}">Editar iniciativa</a>
+            {% endif %}
         </div>
         <div class="meta-grid">
             <div><span>Objetivo</span><strong>{{ iniciativa.objetivo.nome }}</strong></div>
@@ -76,6 +81,41 @@
                     {% endfor %}
                 </div>
             </div>
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Historico</p>
+            <h3>Ultimas alteracoes</h3>
+        </div>
+        <div class="table-wrap">
+            <table class="ledger-table">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Campo</th>
+                        <th>De</th>
+                        <th>Para</th>
+                        <th>Por</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in historico %}
+                        <tr>
+                            <td>{{ evento.criado_em|date:"d/m/Y H:i" }}</td>
+                            <td>{{ evento.campo }}</td>
+                            <td>{{ evento.valor_anterior }}</td>
+                            <td>{{ evento.valor_novo }}</td>
+                            <td>{{ evento.usuario|default:"Sistema" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5">Nenhuma alteracao registrada ainda.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </article>
 

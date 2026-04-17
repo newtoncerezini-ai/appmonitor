@@ -4,6 +4,7 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (
     Alerta,
     Empresa,
+    HistoricoAlteracao,
     Iniciativa,
     ObjetivoEstrategico,
     PlanoAcao,
@@ -73,3 +74,10 @@ class AlertaAdmin(admin.ModelAdmin):
     list_display = ("titulo", "empresa", "usuario", "lido", "criado_em")
     list_filter = ("empresa", "lido")
     search_fields = ("titulo", "mensagem", "usuario__username")
+
+
+@admin.register(HistoricoAlteracao)
+class HistoricoAlteracaoAdmin(admin.ModelAdmin):
+    list_display = ("entidade_nome", "entidade_tipo", "campo", "usuario", "criado_em")
+    list_filter = ("empresa", "entidade_tipo", "campo")
+    search_fields = ("entidade_nome", "campo", "valor_anterior", "valor_novo")

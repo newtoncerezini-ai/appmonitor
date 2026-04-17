@@ -34,6 +34,13 @@ class StatusWorkflow(models.TextChoices):
     BLOQUEADO = "bloqueado", "Bloqueado"
 
 
+class TipoEntidadeHistorico(models.TextChoices):
+    OBJETIVO = "objetivo", "Objetivo"
+    INICIATIVA = "iniciativa", "Iniciativa"
+    TAREFA = "tarefa", "Tarefa"
+    PLANO_ACAO = "plano_acao", "Plano de acao"
+
+
 class Usuario(AbstractUser):
     empresa = models.ForeignKey(
         Empresa,
@@ -136,6 +143,7 @@ class Iniciativa(models.Model):
 
     def atualizar_status_automatico(self, salvar=True):
         tarefas = self.tarefas.all()
+        status_anterior = self.status
         novo_status = self.status
         if tarefas.exists() and not tarefas.exclude(status=StatusWorkflow.CONCLUIDO).exists():
             novo_status = StatusWorkflow.CONCLUIDO
@@ -152,6 +160,16 @@ class Iniciativa(models.Model):
                 status=novo_status,
                 atualizada_em=timezone.now(),
             )
+            if novo_status != status_anterior:
+                registrar_historico_sistema(
+                    empresa=self.empresa,
+                    entidade_tipo=TipoEntidadeHistorico.INICIATIVA,
+                    entidade_id=self.pk,
+                    entidade_nome=self.nome,
+                    campo="Status",
+                    valor_anterior=dict(StatusWorkflow.choices).get(status_anterior, status_anterior),
+                    valor_novo=dict(StatusWorkflow.choices).get(novo_status, novo_status),
+                )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -196,6 +214,7 @@ class Tarefa(models.Model):
 
     def atualizar_status_automatico(self, salvar=True):
         etapas = self.planos_acao.all()
+        status_anterior = self.status
         novo_status = self.status
         if etapas.exists() and not etapas.exclude(status=StatusWorkflow.CONCLUIDO).exists():
             novo_status = StatusWorkflow.CONCLUIDO
@@ -212,6 +231,16 @@ class Tarefa(models.Model):
                 status=novo_status,
                 atualizada_em=timezone.now(),
             )
+            if novo_status != status_anterior:
+                registrar_historico_sistema(
+                    empresa=self.empresa,
+                    entidade_tipo=TipoEntidadeHistorico.TAREFA,
+                    entidade_id=self.pk,
+                    entidade_nome=self.nome,
+                    campo="Status",
+                    valor_anterior=dict(StatusWorkflow.choices).get(status_anterior, status_anterior),
+                    valor_novo=dict(StatusWorkflow.choices).get(novo_status, novo_status),
+                )
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -293,3 +322,49 @@ class Alerta(models.Model):
 
     def __str__(self):
         return self.titulo
+
+
+class HistoricoAlteracao(models.Model):
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name="historicos_alteracao",
+    )
+    usuario = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="historicos_alteracao",
+    )
+    entidade_tipo = models.CharField(
+        max_length=20,
+        choices=TipoEntidadeHistorico.choices,
+    )
+    entidade_id = models.PositiveIntegerField()
+    entidade_nome = models.CharField(max_length=255)
+    campo = models.CharField(max_length=120)
+    valor_anterior = models.TextField(blank=True)
+    valor_novo = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Historico de alteracao"
+        verbose_name_plural = "Historicos de alteracao"
+        ordering = ["-criado_em"]
+
+    def __str__(self):
+        return f"{self.get_entidade_tipo_display()} {self.entidade_nome} - {self.campo}"
+
+
+def registrar_historico_sistema(empresa, entidade_tipo, entidade_id, entidade_nome, campo, valor_anterior, valor_novo):
+    HistoricoAlteracao.objects.create(
+        empresa=empresa,
+        usuario=None,
+        entidade_tipo=entidade_tipo,
+        entidade_id=entidade_id,
+        entidade_nome=entidade_nome,
+        campo=campo,
+        valor_anterior=valor_anterior,
+        valor_novo=valor_novo,
+    )
