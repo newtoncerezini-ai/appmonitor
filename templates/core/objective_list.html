@@ -5,7 +5,7 @@
 {% block content %}
 <section class="page-hero">
     <div>
-        <p class="eyebrow">Strategic Objectives</p>
+        <p class="eyebrow">Mapa Estratégico</p>
         <h1>{{ page_title }}</h1>
         <p class="page-intro">{{ page_intro }}</p>
     </div>
@@ -37,12 +37,12 @@
                 </div>
                 <span class="status-pill neutral">{{ objetivo.total_iniciativas }} iniciativas</span>
             </div>
-            <p>{{ objetivo.descricao|default:"Sem descricao cadastrada." }}</p>
+            <p>{{ objetivo.descricao|default:"Sem descrição cadastrada." }}</p>
         </article>
     {% empty %}
         <article class="empty-card">
             <h2>Nenhum objetivo cadastrado</h2>
-            <p>Crie o primeiro objetivo estrategico para organizar as iniciativas da empresa.</p>
+            <p>Crie o primeiro objetivo estratégico para organizar as iniciativas da empresa.</p>
         </article>
     {% endfor %}
 </section>

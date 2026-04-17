@@ -5,21 +5,21 @@
 {% block content %}
 <section class="auth-card">
     <div class="auth-copy">
-        <p class="eyebrow">Acesso seguro</p>
-        <h2>Monitore a execucao da consultoria com uma interface mais clara e profissional</h2>
-        <p class="muted">Centralize objetivos estrategicos, iniciativas, tarefas, etapas e alertas de vencimento por empresa.</p>
+        <p class="eyebrow">Acesso Seguro</p>
+        <h2>Monitore a execução da consultoria com uma interface mais clara, profissional e pronta para cliente.</h2>
+        <p class="muted">Centralize objetivos estratégicos, iniciativas, tarefas, etapas e alertas de vencimento por empresa em um único ambiente.</p>
         <div class="feature-list">
             <div class="feature-item">
-                <strong>Status automaticos</strong>
-                <span>Tarefas e iniciativas evoluem sozinhas conforme a execucao.</span>
+                <strong>Status automáticos</strong>
+                <span>Tarefas e iniciativas evoluem sozinhas conforme a execução.</span>
             </div>
             <div class="feature-item">
-                <strong>Visao por responsavel</strong>
+                <strong>Visão por responsável</strong>
                 <span>Cada colaborador acompanha o que precisa entregar primeiro.</span>
             </div>
             <div class="feature-item">
                 <strong>Base pronta para escalar</strong>
-                <span>Estrutura pensada para operar com varias empresas de consultoria.</span>
+                <span>Estrutura pensada para operar com várias empresas de consultoria.</span>
             </div>
         </div>
     </div>
@@ -27,11 +27,11 @@
     <form method="post" class="auth-form">
         {% csrf_token %}
         {{ form.non_field_errors }}
-        <label for="id_username">Usuario</label>
+        <label for="id_username">Usuário</label>
         {{ form.username }}
         <label for="id_password">Senha</label>
         {{ form.password }}
-        <button type="submit">Entrar</button>
+        <button type="submit">Entrar no painel</button>
     </form>
 </section>
 {% endblock %}

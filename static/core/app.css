@@ -23,7 +23,9 @@
 
 body {
     margin: 0;
-    background: var(--surface);
+    background:
+        radial-gradient(circle at top left, rgba(131, 251, 165, 0.08), transparent 25%),
+        linear-gradient(180deg, #f5f7fb 0%, #eef2f8 100%);
     color: var(--text);
     font-family: "Inter", sans-serif;
     min-height: 100vh;
@@ -66,12 +68,13 @@ h4,
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 999px;
-    background: var(--primary-fixed);
+    background: linear-gradient(135deg, #dfe8ff 0%, #b8ccff 100%);
     color: var(--primary);
     display: grid;
     place-items: center;
     font-family: "Manrope", sans-serif;
     font-weight: 800;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
 .brand-title {
@@ -120,8 +123,16 @@ h4,
 }
 
 .sidebar .brand-mark {
-    background: rgba(219, 225, 255, 0.16);
+    background: linear-gradient(135deg, rgba(219, 225, 255, 0.3), rgba(131, 251, 165, 0.2));
     color: #e8efff;
+}
+
+.sidebar-label {
+    color: rgba(219, 232, 255, 0.62);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.68rem;
+    font-weight: 700;
 }
 
 .sidebar .brand-title {
@@ -165,6 +176,18 @@ h4,
     transition: 180ms ease;
 }
 
+.nav-count {
+    margin-left: auto;
+    min-width: 1.9rem;
+    padding: 0.28rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: inherit;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
 .sidebar-nav a:hover {
     transform: translateX(2px);
     background: rgba(255, 255, 255, 0.08);
@@ -190,8 +213,18 @@ h4,
     flex-shrink: 0;
 }
 
+.nav-icon svg {
+    width: 1.05rem;
+    height: 1.05rem;
+}
+
 .sidebar-nav a.is-active .nav-icon {
     background: var(--primary-fixed);
+    color: var(--primary);
+}
+
+.sidebar-nav a.is-active .nav-count {
+    background: rgba(0, 17, 58, 0.08);
     color: var(--primary);
 }
 
@@ -218,14 +251,30 @@ h4,
 }
 
 .secondary-link {
-    background: var(--surface-high);
+    background: linear-gradient(180deg, #eef2f9 0%, #e3e8f2 100%);
     color: var(--primary);
+    border: 1px solid rgba(0, 17, 58, 0.08);
 }
 
 .ghost-button,
 .ghost-link {
     background: transparent;
     color: var(--primary);
+}
+
+.primary-link,
+.secondary-link,
+.ghost-button,
+.sidebar-bottom button {
+    transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.primary-link:hover,
+.secondary-link:hover,
+.ghost-button:hover,
+.sidebar-bottom button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 26px rgba(0, 17, 58, 0.08);
 }
 
 .user-chip {
@@ -240,6 +289,11 @@ h4,
 .sidebar-bottom .user-chip {
     background: rgba(255, 255, 255, 0.08);
     color: #edf4ff;
+}
+
+.sidebar-meta {
+    display: grid;
+    gap: 0.35rem;
 }
 
 .sidebar-ghost {
@@ -260,7 +314,7 @@ h4,
 .page-shell.with-sidebar {
     max-width: none;
     margin-left: 18.5rem;
-    padding: 2rem 2rem 5rem;
+    padding: 2.25rem 2.25rem 5rem;
 }
 
 .messages {
@@ -299,6 +353,30 @@ h4,
     line-height: 1.7;
 }
 
+.hero-note-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+
+.hero-note {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.3rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(0, 17, 58, 0.06);
+    color: var(--primary);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.hero-note.soft {
+    background: rgba(131, 251, 165, 0.26);
+    color: var(--secondary);
+}
+
 .hero-side {
     display: grid;
     grid-template-columns: repeat(2, minmax(8rem, 1fr));
@@ -320,6 +398,8 @@ h4,
 
 .hero-metric {
     padding: 1.2rem;
+    display: grid;
+    gap: 0.12rem;
 }
 
 .hero-metric span,
@@ -342,6 +422,12 @@ h4,
     letter-spacing: -0.04em;
 }
 
+.hero-metric small {
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.45;
+}
+
 .dashboard-grid,
 .objective-grid {
     display: grid;
@@ -357,6 +443,58 @@ h4,
     grid-column: 1 / -1;
 }
 
+.executive-summary {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 1.25rem;
+    background:
+        linear-gradient(145deg, rgba(0, 17, 58, 0.98), rgba(12, 35, 78, 0.95)),
+        #0d1b34;
+    color: #f2f6ff;
+}
+
+.executive-summary .eyebrow,
+.executive-summary .muted,
+.executive-summary h3,
+.summary-metric span,
+.summary-metric strong {
+    color: inherit;
+}
+
+.executive-summary .muted {
+    color: rgba(242, 246, 255, 0.78);
+}
+
+.summary-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.summary-metric {
+    padding: 1rem;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.summary-metric span {
+    display: block;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    opacity: 0.82;
+}
+
+.summary-metric strong {
+    display: block;
+    margin-top: 0.55rem;
+    font-family: "Manrope", sans-serif;
+    font-size: 1.9rem;
+    letter-spacing: -0.04em;
+}
+
 .action-stack {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -370,6 +508,18 @@ h4,
 
 .action-card {
     grid-column: 1 / -1;
+}
+
+.card-heading {
+    display: grid;
+    gap: 0.2rem;
+    margin-bottom: 0.8rem;
+}
+
+.card-heading h3 {
+    margin: 0;
+    color: var(--primary);
+    font-size: 1.15rem;
 }
 
 .filters-card,
@@ -919,6 +1069,33 @@ h4,
     background: var(--surface-low);
 }
 
+.auth-copy h2 {
+    margin: 0;
+    color: var(--primary);
+    font-size: clamp(2rem, 4vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.04em;
+}
+
+.auth-copy .muted {
+    margin-top: 1rem;
+    max-width: 34rem;
+}
+
+.auth-form {
+    align-content: center;
+}
+
+.auth-form button {
+    border: 0;
+    border-radius: 0.8rem;
+    padding: 0.95rem 1.1rem;
+    background: var(--primary);
+    color: #fff;
+    font-weight: 800;
+    cursor: pointer;
+}
+
 .mobile-nav {
     display: none;
 }
@@ -930,7 +1107,8 @@ h4,
 
     .page-hero,
     .ledger-card-split,
-    .auth-card {
+    .auth-card,
+    .executive-summary {
         grid-template-columns: 1fr;
         display: grid;
     }
@@ -974,6 +1152,11 @@ h4,
     .task-row,
     .split-toolbar {
         display: grid;
+    }
+
+    .hero-note-row,
+    .summary-metrics {
+        grid-template-columns: 1fr;
     }
 
     .hero-side,

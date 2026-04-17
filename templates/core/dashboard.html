@@ -1,109 +1,166 @@
 {% extends "base.html" %}
 
-{% block title %}Painel{% endblock %}
+{% block title %}Painel Executivo{% endblock %}
 
 {% block content %}
 <section class="page-hero">
     <div>
         <p class="eyebrow">Painel Executivo</p>
         <h1>{{ empresa.nome }}</h1>
-        <p class="page-intro">Visao inicial da execucao da consultoria com foco em prioridades, volume de trabalho aberto e pontos de atencao.</p>
+        <p class="page-intro">Visão inicial da execução da consultoria com foco em prioridades, capacidade operacional e pontos de atenção.</p>
+        <div class="hero-note-row">
+            <span class="hero-note">Operação centralizada em objetivos, iniciativas, tarefas e planos de ação</span>
+            <span class="hero-note soft">Atualizado para apresentação executiva</span>
+        </div>
     </div>
     <div class="hero-side">
         <div class="hero-metric">
             <span>Objetivos</span>
             <strong>{{ kpis.objetivos }}</strong>
+            <small>Pilares estratégicos ativos</small>
         </div>
         <div class="hero-metric">
             <span>Iniciativas ativas</span>
             <strong>{{ kpis.iniciativas_ativas }}</strong>
+            <small>Frentes em execução</small>
         </div>
         <div class="hero-metric">
             <span>Tarefas abertas</span>
             <strong>{{ kpis.tarefas_abertas }}</strong>
+            <small>Demandas operacionais no radar</small>
         </div>
         <div class="hero-metric">
             <span>Alertas</span>
             <strong>{{ total_alertas }}</strong>
+            <small>Itens próximos do vencimento</small>
         </div>
     </div>
 </section>
 
 <section class="dashboard-grid">
+    <article class="ledger-card executive-summary span-full">
+        <div class="executive-summary-copy">
+            <p class="eyebrow">Resumo da Operação</p>
+            <h3>Pronto para apresentar andamento, foco e capacidade de execução.</h3>
+            <p class="muted">O painel combina visão gerencial com acompanhamento operacional por responsável, datas e dependências entre iniciativas.</p>
+        </div>
+        <div class="summary-metrics">
+            <div class="summary-metric">
+                <span>Iniciativas concluídas</span>
+                <strong>{{ saude_operacao.iniciativas }}%</strong>
+            </div>
+            <div class="summary-metric">
+                <span>Tarefas concluídas</span>
+                <strong>{{ saude_operacao.tarefas }}%</strong>
+            </div>
+            <div class="summary-metric">
+                <span>Etapas concluídas</span>
+                <strong>{{ saude_operacao.etapas }}%</strong>
+            </div>
+            <div class="summary-metric">
+                <span>Responsáveis</span>
+                <strong>{{ saude_operacao.responsaveis }}</strong>
+            </div>
+        </div>
+    </article>
+
     {% if pode_gerenciar_execucao %}
         <article class="ledger-card action-card span-full">
-            <h3>Acoes rapidas</h3>
+            <div class="card-heading">
+                <div>
+                    <p class="eyebrow">Ações Rápidas</p>
+                    <h3>Cadastre novos itens sem entrar no admin</h3>
+                </div>
+            </div>
             <div class="action-stack">
                 <a class="secondary-link" href="{% url 'core:objetivo_create' %}">Novo objetivo</a>
                 <a class="secondary-link" href="{% url 'core:iniciativa_create' %}">Nova iniciativa</a>
                 <a class="secondary-link" href="{% url 'core:tarefa_create' %}">Nova tarefa</a>
-                <a class="secondary-link" href="{% url 'core:plano_acao_create' %}">Novo plano de acao</a>
+                <a class="secondary-link" href="{% url 'core:plano_acao_create' %}">Novo plano de ação</a>
             </div>
         </article>
     {% endif %}
 
     <article class="ledger-card">
-        <h3>Objetivos estrategicos</h3>
+        <div class="card-heading">
+            <p class="eyebrow">Direcionadores</p>
+            <h3>Objetivos estratégicos</h3>
+        </div>
         {% for objetivo in objetivos %}
             <div class="item">
                 <strong>{{ objetivo.nome }}</strong>
-                <span>{{ objetivo.descricao|default:"Sem descricao cadastrada." }}</span>
+                <span>{{ objetivo.descricao|default:"Sem descrição cadastrada." }}</span>
             </div>
         {% empty %}
-            <p class="muted">Nenhum objetivo estrategico cadastrado ainda.</p>
+            <p class="muted">Nenhum objetivo estratégico cadastrado ainda.</p>
         {% endfor %}
     </article>
 
     <article class="ledger-card">
-        <h3>Minhas tarefas</h3>
+        <div class="card-heading">
+            <p class="eyebrow">Foco Pessoal</p>
+            <h3>Minhas tarefas</h3>
+        </div>
         {% for tarefa in minhas_tarefas %}
             <a class="item" href="{% url 'core:tarefa_detail' tarefa.pk %}">
                 <strong>{{ tarefa.nome }}</strong>
                 <span>{{ tarefa.get_status_display }}{% if tarefa.data_vencimento %} - vence em {{ tarefa.data_vencimento }}{% endif %}</span>
             </a>
         {% empty %}
-            <p class="muted">Nenhuma tarefa vinculada a voce.</p>
+            <p class="muted">Nenhuma tarefa vinculada a você.</p>
         {% endfor %}
     </article>
 
     <article class="ledger-card">
-        <h3>Minhas etapas</h3>
+        <div class="card-heading">
+            <p class="eyebrow">Execução</p>
+            <h3>Minhas etapas</h3>
+        </div>
         {% for etapa in minhas_etapas %}
             <div class="item">
                 <strong>{{ etapa.etapa }}</strong>
                 <span>{{ etapa.tarefa.nome }} - {{ etapa.get_status_display }}</span>
             </div>
         {% empty %}
-            <p class="muted">Nenhuma etapa vinculada a voce.</p>
+            <p class="muted">Nenhuma etapa vinculada a você.</p>
         {% endfor %}
     </article>
 
     <article class="ledger-card">
-        <h3>Alertas de tarefas</h3>
+        <div class="card-heading">
+            <p class="eyebrow">Atenção</p>
+            <h3>Alertas de tarefas</h3>
+        </div>
         {% for tarefa in alertas_tarefas %}
             <a class="item" href="{% url 'core:tarefa_detail' tarefa.pk %}">
                 <strong>{{ tarefa.nome }}</strong>
                 <span>Vencimento: {{ tarefa.data_vencimento }}</span>
             </a>
         {% empty %}
-            <p class="muted">Nenhuma tarefa perto do vencimento nos proximos 7 dias.</p>
+            <p class="muted">Nenhuma tarefa perto do vencimento nos próximos 7 dias.</p>
         {% endfor %}
     </article>
 
     <article class="ledger-card">
-        <h3>Alertas de etapas</h3>
+        <div class="card-heading">
+            <p class="eyebrow">Acompanhamento</p>
+            <h3>Alertas de etapas</h3>
+        </div>
         {% for etapa in alertas_etapas %}
             <div class="item">
                 <strong>{{ etapa.etapa }}</strong>
                 <span>{{ etapa.tarefa.nome }} - fim previsto em {{ etapa.data_fim_prevista }}</span>
             </div>
         {% empty %}
-            <p class="muted">Nenhuma etapa perto do vencimento nos proximos 7 dias.</p>
+            <p class="muted">Nenhuma etapa perto do vencimento nos próximos 7 dias.</p>
         {% endfor %}
     </article>
 
     <article class="ledger-card span-full">
-        <h3>Iniciativas em andamento</h3>
+        <div class="card-heading">
+            <p class="eyebrow">Pipeline Executivo</p>
+            <h3>Iniciativas em andamento</h3>
+        </div>
         {% for iniciativa in iniciativas_em_andamento %}
             <div class="item">
                 <strong>{{ iniciativa.nome }}</strong>

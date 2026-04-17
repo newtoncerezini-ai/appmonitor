@@ -1,4 +1,5 @@
 import os
+import sys
 from pathlib import Path
 
 import dj_database_url
@@ -19,6 +20,7 @@ SECRET_KEY = os.environ.get(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "False").lower() == "true"
 IS_PRODUCTION = not DEBUG
+IS_TEST = "test" in sys.argv
 
 ALLOWED_HOSTS = os.environ.get(
     "ALLOWED_HOSTS",
@@ -38,6 +40,14 @@ CSRF_COOKIE_SECURE = os.environ.get("CSRF_COOKIE_SECURE", str(IS_PRODUCTION)).lo
 SECURE_HSTS_SECONDS = int(os.environ.get("SECURE_HSTS_SECONDS", "31536000" if IS_PRODUCTION else "0"))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = IS_PRODUCTION
 SECURE_HSTS_PRELOAD = IS_PRODUCTION
+
+if IS_TEST:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+    SECURE_HSTS_PRELOAD = False
 
 
 # Application definition

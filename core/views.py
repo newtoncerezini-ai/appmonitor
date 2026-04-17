@@ -18,7 +18,7 @@ class EmpresaContextMixin(LoginRequiredMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.empresa:
-            raise Http404("Usuario sem empresa vinculada.")
+            raise Http404("Usuário sem empresa vinculada.")
         return super().dispatch(request, *args, **kwargs)
 
     def get_empresa(self):
@@ -71,6 +71,15 @@ class DashboardView(EmpresaContextMixin, TemplateView):
         minhas_tarefas = tarefas.filter(
             Q(responsavel=usuario) | Q(planos_acao__responsavel=usuario)
         ).distinct()
+        total_tarefas = tarefas.count()
+        tarefas_concluidas = tarefas.filter(status=StatusWorkflow.CONCLUIDO).count()
+        total_etapas = etapas.count()
+        etapas_concluidas = etapas.filter(status=StatusWorkflow.CONCLUIDO).count()
+        total_iniciativas = iniciativas.count()
+        iniciativas_concluidas = iniciativas.filter(status=StatusWorkflow.CONCLUIDO).count()
+        percentual_tarefas = int((tarefas_concluidas / total_tarefas) * 100) if total_tarefas else 0
+        percentual_etapas = int((etapas_concluidas / total_etapas) * 100) if total_etapas else 0
+        percentual_iniciativas = int((iniciativas_concluidas / total_iniciativas) * 100) if total_iniciativas else 0
         alertas_tarefas = tarefas.filter(
             status__in=[StatusWorkflow.NAO_INICIADO, StatusWorkflow.EM_ANDAMENTO],
             data_vencimento__isnull=False,
@@ -93,6 +102,12 @@ class DashboardView(EmpresaContextMixin, TemplateView):
                 "alertas_tarefas": alertas_tarefas[:10],
                 "alertas_etapas": alertas_etapas[:10],
                 "total_alertas": alertas_tarefas.count() + alertas_etapas.count(),
+                "saude_operacao": {
+                    "tarefas": percentual_tarefas,
+                    "etapas": percentual_etapas,
+                    "iniciativas": percentual_iniciativas,
+                    "responsaveis": Usuario.objects.filter(empresa=empresa).count(),
+                },
                 "kpis": {
                     "objetivos": objetivos.count(),
                     "iniciativas_ativas": iniciativas.exclude(status=StatusWorkflow.CONCLUIDO).count(),
@@ -123,8 +138,8 @@ class ObjectiveListView(EmpresaContextMixin, ListView):
         context.update(
             {
                 **self.get_base_context(),
-                "page_title": "Objetivos estrategicos",
-                "page_intro": "Os pilares que organizam a consultoria e orientam a execucao das iniciativas.",
+                "page_title": "Objetivos estratégicos",
+                "page_intro": "Os pilares que organizam a consultoria e orientam a execução das iniciativas.",
                 "hero_value": self.object_list.count(),
                 "hero_label": "Objetivos ativos",
                 "hero_secondary": iniciativas.count(),
@@ -229,7 +244,7 @@ class InitiativeListView(EmpresaContextMixin, ListView):
             {
                 **self.get_base_context(),
                 "page_title": "Iniciativas",
-                "page_intro": "Cada iniciativa conecta um objetivo estrategico com entregas praticas, donos claros e prazo.",
+                "page_intro": "Cada iniciativa conecta um objetivo estratégico com entregas práticas, responsáveis claros e prazo.",
                 "hero_value": self.object_list.exclude(status=StatusWorkflow.CONCLUIDO).count(),
                 "hero_label": "Em andamento",
                 "hero_secondary": self.object_list.count(),
@@ -274,7 +289,7 @@ class TaskListView(EmpresaContextMixin, ListView):
             {
                 **self.get_base_context(),
                 "page_title": "Tarefas",
-                "page_intro": "Visao operacional da execucao com foco em responsavel, vencimento e acesso rapido ao plano de acao.",
+                "page_intro": "Visão operacional da execução com foco em responsável, vencimento e acesso rápido ao plano de ação.",
                 "hero_value": tarefas.exclude(status=StatusWorkflow.CONCLUIDO).count(),
                 "hero_label": "Tarefas abertas",
                 "hero_secondary": tarefas.filter(status=StatusWorkflow.ATRASADO).count(),
@@ -316,7 +331,7 @@ class InitiativeDetailView(EmpresaContextMixin, DetailView):
 
 
 class GestaoExecucaoMixin(EmpresaContextMixin):
-    permission_denied_message = "Seu perfil nao tem permissao para criar itens."
+    permission_denied_message = "Seu perfil não tem permissão para criar itens."
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.pode_gerenciar_execucao:
@@ -360,9 +375,9 @@ class BaseCreateView(GestaoExecucaoMixin, CreateView):
 class ObjetivoCreateView(BaseCreateView):
     model = ObjetivoEstrategico
     form_class = ObjetivoEstrategicoForm
-    title = "Novo objetivo estrategico"
+    title = "Novo objetivo estratégico"
     submit_label = "Criar objetivo"
-    success_message = "Objetivo estrategico criado com sucesso."
+    success_message = "Objetivo estratégico criado com sucesso."
 
     def form_valid(self, form):
         form.instance.empresa = self.request.user.empresa
@@ -408,9 +423,9 @@ class TarefaCreateView(BaseCreateView):
 class PlanoAcaoCreateView(BaseCreateView):
     model = PlanoAcao
     form_class = PlanoAcaoForm
-    title = "Novo plano de acao"
+    title = "Novo plano de ação"
     submit_label = "Criar etapa"
-    success_message = "Etapa do plano de acao criada com sucesso."
+    success_message = "Etapa do plano de ação criada com sucesso."
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
