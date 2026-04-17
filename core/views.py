@@ -17,6 +17,8 @@ class EmpresaContextMixin(LoginRequiredMixin):
     active_section = ""
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
         if not request.user.empresa:
             raise Http404("Usuário sem empresa vinculada.")
         return super().dispatch(request, *args, **kwargs)
