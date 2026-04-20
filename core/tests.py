@@ -554,6 +554,34 @@ class ReuniaoTests(TestCase):
         self.assertEqual(set(mail.outbox[0].to), {"admin@demo.local", "cliente@demo.local"})
         self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
 
+    @override_settings(EMAIL_BACKEND="backend.invalido.EmailBackend")
+    def test_erro_no_envio_da_ata_retorna_para_detalhe(self):
+        reuniao = Reuniao.objects.create(
+            empresa=self.empresa,
+            titulo="Reuniao com erro de email",
+            criada_por=self.usuario,
+        )
+        reuniao.participantes_usuarios.add(self.usuario)
+
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        response = self.client.post(reverse("core:reuniao_finalizar_enviar", args=[reuniao.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("core:reuniao_detail", args=[reuniao.pk]))
+
+    def test_get_no_envio_da_ata_retorna_para_detalhe(self):
+        reuniao = Reuniao.objects.create(
+            empresa=self.empresa,
+            titulo="Reuniao por get",
+            criada_por=self.usuario,
+        )
+
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        response = self.client.get(reverse("core:reuniao_finalizar_enviar", args=[reuniao.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, reverse("core:reuniao_detail", args=[reuniao.pk]))
+
     def test_encaminhamento_gera_tarefa(self):
         reuniao = Reuniao.objects.create(
             empresa=self.empresa,

@@ -895,6 +895,23 @@ class ReuniaoUpdateView(BaseUpdateView):
 
 
 class ReuniaoFinalizarEnviarView(GestaoExecucaoMixin, View):
+    http_method_names = ["post", "get"]
+
+    def dispatch(self, request, *args, **kwargs):
+        try:
+            return super().dispatch(request, *args, **kwargs)
+        except Exception as exc:
+            pk = kwargs.get("pk")
+            logger.exception("Erro inesperado no fluxo de envio da ata da reuniao %s", pk)
+            messages.error(request, f"Nao foi possivel enviar a ata agora: {exc}")
+            if pk:
+                return redirect("core:reuniao_detail", pk=pk)
+            return redirect("core:reuniao_list")
+
+    def get(self, request, pk):
+        messages.warning(request, "Use o botao da ata para finalizar e enviar o PDF.")
+        return redirect("core:reuniao_detail", pk=pk)
+
     def post(self, request, pk):
         try:
             reuniao = get_object_or_404(
