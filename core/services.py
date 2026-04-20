@@ -1,5 +1,5 @@
 from django.conf import settings
-from django.core.mail import EmailMessage
+from django.core.mail import EmailMessage, get_connection
 from django.utils import timezone
 
 
@@ -120,11 +120,13 @@ def enviar_ata_reuniao_por_email(reuniao):
         f"Segue em anexo a ata consolidada da reuniao \"{reuniao.titulo}\".\n\n"
         "Este envio foi gerado automaticamente pelo sistema de monitoramento.\n"
     )
+    connection = get_connection(timeout=getattr(settings, "EMAIL_TIMEOUT", 10))
     message = EmailMessage(
         subject=subject,
         body=body,
         from_email=getattr(settings, "DEFAULT_FROM_EMAIL", None),
         to=destinatarios,
+        connection=connection,
     )
     filename = f"ata-reuniao-{reuniao.pk}.pdf"
     message.attach(filename, gerar_pdf_ata_reuniao(reuniao), "application/pdf")
