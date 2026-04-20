@@ -321,6 +321,12 @@ class Reuniao(models.Model):
     data_hora = models.DateTimeField(default=timezone.now)
     local = models.CharField(max_length=180, blank=True)
     participantes = models.TextField(blank=True)
+    participantes_usuarios = models.ManyToManyField(
+        Usuario,
+        blank=True,
+        related_name="reunioes_participante",
+    )
+    participantes_externos = models.TextField(blank=True)
     pauta = models.TextField(blank=True)
     ata = models.TextField(blank=True)
     decisoes = models.TextField(blank=True)

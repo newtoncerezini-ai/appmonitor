@@ -47,17 +47,19 @@ def _format_history_value(instance, field_name, value):
     return str(value)
 
 
-def registrar_historico_alteracoes(instance, original, user, form, tipo_entidade):
+def registrar_historico_alteracoes(instance, original, user, form, tipo_entidade, previous_m2m_values=None):
     if not form.changed_data:
         return
+    previous_m2m_values = previous_m2m_values or {}
     for field_name in form.changed_data:
         field = form.fields.get(field_name)
         if field is None:
             continue
 
-        if field_name == "dependencias":
-            anterior = list(original.dependencias.order_by("nome"))
-            novo = list(instance.dependencias.order_by("nome"))
+        model_field = instance._meta.get_field(field_name)
+        if model_field.many_to_many:
+            anterior = previous_m2m_values.get(field_name, list(getattr(original, field_name).all().order_by("pk")))
+            novo = list(getattr(instance, field_name).all().order_by("pk"))
         else:
             anterior = getattr(original, field_name)
             novo = getattr(instance, field_name)
@@ -539,6 +541,14 @@ class BaseUpdateView(GestaoExecucaoMixin, UpdateView):
 
     def form_valid(self, form):
         original = self.get_queryset().get(pk=self.object.pk)
+        previous_m2m_values = {}
+        for field_name in form.changed_data:
+            try:
+                model_field = self.model._meta.get_field(field_name)
+            except Exception:
+                continue
+            if model_field.many_to_many:
+                previous_m2m_values[field_name] = list(getattr(original, field_name).all().order_by("pk"))
         response = super().form_valid(form)
         registrar_historico_alteracoes(
             self.object,
@@ -546,6 +556,7 @@ class BaseUpdateView(GestaoExecucaoMixin, UpdateView):
             self.request.user,
             form,
             self.history_entity_type,
+            previous_m2m_values,
         )
         messages.success(self.request, self.success_message)
         return response
@@ -797,6 +808,7 @@ class ReuniaoDetailView(EmpresaContextMixin, DetailView):
             Reuniao.objects.filter(empresa=self.get_empresa())
             .select_related("criada_por")
             .prefetch_related(
+                "participantes_usuarios",
                 "encaminhamentos__responsavel",
                 "encaminhamentos__objetivo",
                 "encaminhamentos__iniciativa_base",

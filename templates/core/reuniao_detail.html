@@ -59,7 +59,22 @@
         <div class="meeting-notes-grid">
             <div>
                 <span class="cell-subtitle">Participantes</span>
-                <p>{{ reuniao.participantes|linebreaksbr|default:"Nenhum participante registrado." }}</p>
+                {% if reuniao.participantes_usuarios.all or reuniao.participantes_externos or reuniao.participantes %}
+                    {% if reuniao.participantes_usuarios.all %}
+                        <div class="participant-chip-list">
+                            {% for participante in reuniao.participantes_usuarios.all %}
+                                <span class="participant-chip">{{ participante.get_full_name|default:participante.username }}</span>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    {% if reuniao.participantes_externos %}
+                        <p>{{ reuniao.participantes_externos|linebreaksbr }}</p>
+                    {% elif reuniao.participantes %}
+                        <p>{{ reuniao.participantes|linebreaksbr }}</p>
+                    {% endif %}
+                {% else %}
+                    <p>Nenhum participante registrado.</p>
+                {% endif %}
             </div>
             <div>
                 <span class="cell-subtitle">Decisoes</span>

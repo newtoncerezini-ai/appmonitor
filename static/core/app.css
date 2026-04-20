@@ -1023,6 +1023,25 @@ h4,
     line-height: 1.7;
 }
 
+.participant-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.85rem;
+}
+
+.participant-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--primary-fixed);
+    color: var(--primary);
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
 .meeting-action-form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));

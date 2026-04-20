@@ -80,7 +80,8 @@ class EncaminhamentoReuniaoInline(admin.TabularInline):
 class ReuniaoAdmin(admin.ModelAdmin):
     list_display = ("titulo", "empresa", "data_hora", "status", "criada_por")
     list_filter = ("empresa", "status")
-    search_fields = ("titulo", "pauta", "ata", "decisoes")
+    search_fields = ("titulo", "pauta", "ata", "decisoes", "participantes_externos")
+    filter_horizontal = ("participantes_usuarios",)
     inlines = [EncaminhamentoReuniaoInline]
 
 

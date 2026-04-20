@@ -117,10 +117,33 @@ class PlanoAcaoForm(BaseEmpresaForm):
 class ReuniaoForm(BaseEmpresaForm):
     class Meta:
         model = Reuniao
-        fields = ["titulo", "data_hora", "local", "participantes", "pauta", "ata", "decisoes", "status"]
+        fields = [
+            "titulo",
+            "data_hora",
+            "local",
+            "participantes_usuarios",
+            "participantes_externos",
+            "pauta",
+            "ata",
+            "decisoes",
+            "status",
+        ]
         widgets = {
             "data_hora": forms.DateTimeInput(attrs={"type": "datetime-local"}),
         }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, user=user, **kwargs)
+        self.fields["participantes_usuarios"].label = "Participantes internos"
+        self.fields["participantes_externos"].label = "Participantes externos"
+        self.fields["participantes_usuarios"].widget = forms.CheckboxSelectMultiple()
+        if self.user and self.user.empresa:
+            self.fields["participantes_usuarios"].queryset = Usuario.objects.filter(
+                empresa=self.user.empresa,
+            ).order_by("first_name", "username")
+        self.fields["participantes_usuarios"].widget.choices = self.fields["participantes_usuarios"].choices
+        self.fields["participantes_usuarios"].help_text = "Selecione os usuarios do sistema que participaram da reuniao."
+        self.fields["participantes_externos"].help_text = "Inclua convidados externos, um por linha, quando houver."
 
 
 class EncaminhamentoReuniaoForm(BaseEmpresaForm):

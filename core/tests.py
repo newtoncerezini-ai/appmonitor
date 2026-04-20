@@ -452,7 +452,8 @@ class ReuniaoTests(TestCase):
                 "titulo": "Reuniao semanal",
                 "data_hora": "2026-04-20T09:00",
                 "local": "Online",
-                "participantes": "Equipe",
+                "participantes_usuarios": [self.usuario.pk],
+                "participantes_externos": "Cliente externo",
                 "pauta": "Acompanhar execucao",
                 "ata": "Discutimos prioridades.",
                 "decisoes": "Manter foco comercial.",
@@ -462,6 +463,9 @@ class ReuniaoTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Reuniao.objects.filter(titulo="Reuniao semanal", empresa=self.empresa).exists())
+        reuniao = Reuniao.objects.get(titulo="Reuniao semanal", empresa=self.empresa)
+        self.assertTrue(reuniao.participantes_usuarios.filter(pk=self.usuario.pk).exists())
+        self.assertEqual(reuniao.participantes_externos, "Cliente externo")
 
     def test_encaminhamento_gera_tarefa(self):
         reuniao = Reuniao.objects.create(

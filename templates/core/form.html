@@ -27,7 +27,7 @@
         {% for field in form %}
             <div class="form-row">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {% if field.name == "dependencias" %}
+                {% if field.name == "dependencias" or field.name == "participantes_usuarios" %}
                     {% if field.subwidgets %}
                         <div class="dependency-selector">
                             {% for subwidget in field.subwidgets %}
@@ -38,7 +38,11 @@
                             {% endfor %}
                         </div>
                     {% else %}
+                        {% if field.name == "participantes_usuarios" %}
+                            <div class="empty-selector">Nenhum usuario interno disponivel no momento.</div>
+                        {% else %}
                         <div class="empty-selector">Nenhuma dependência disponível no momento.</div>
+                        {% endif %}
                     {% endif %}
                 {% else %}
                     {{ field }}
