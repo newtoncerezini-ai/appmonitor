@@ -1,3 +1,9 @@
+import base64
+import json
+from email.utils import parseaddr
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
 from django.conf import settings
 from django.core.mail import EmailMessage, get_connection
 from django.utils import timezone
@@ -103,23 +109,76 @@ def gerar_pdf_ata_reuniao(reuniao):
     return bytes(pdf)
 
 
-def enviar_ata_reuniao_por_email(reuniao):
+def _coletar_destinatarios(reuniao):
     destinatarios = []
     for usuario in reuniao.participantes_usuarios.exclude(email=""):
         destinatarios.append(usuario.email)
     for participante in reuniao.participantes_externos_lista.exclude(email=""):
         destinatarios.append(participante.email)
+    return sorted(set(destinatarios))
 
-    destinatarios = sorted(set(destinatarios))
-    if not destinatarios:
-        return 0
 
+def _conteudo_email_ata(reuniao):
     subject = f"Ata consolidada - {reuniao.titulo}"
     body = (
         f"Ola,\n\n"
         f"Segue em anexo a ata consolidada da reuniao \"{reuniao.titulo}\".\n\n"
         "Este envio foi gerado automaticamente pelo sistema de monitoramento.\n"
     )
+    filename = f"ata-reuniao-{reuniao.pk}.pdf"
+    return subject, body, filename, gerar_pdf_ata_reuniao(reuniao)
+
+
+def _enviar_por_brevo_api(reuniao, destinatarios):
+    api_key = getattr(settings, "BREVO_API_KEY", "")
+    remetente_nome, remetente_email = parseaddr(getattr(settings, "DEFAULT_FROM_EMAIL", ""))
+    if not remetente_email:
+        raise ValueError("DEFAULT_FROM_EMAIL precisa conter um e-mail valido.")
+
+    subject, body, filename, pdf = _conteudo_email_ata(reuniao)
+    payload = {
+        "sender": {"name": remetente_nome or "Consultoria X", "email": remetente_email},
+        "to": [{"email": email} for email in destinatarios],
+        "subject": subject,
+        "textContent": body,
+        "attachment": [
+            {
+                "name": filename,
+                "content": base64.b64encode(pdf).decode("ascii"),
+            }
+        ],
+    }
+    request = Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "accept": "application/json",
+            "api-key": api_key,
+            "content-type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urlopen(request, timeout=getattr(settings, "EMAIL_TIMEOUT", 10)) as response:
+            if response.status >= 400:
+                raise RuntimeError(f"Brevo API retornou status {response.status}.")
+    except HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"Brevo API retornou erro {exc.code}: {detail}") from exc
+    except URLError as exc:
+        raise RuntimeError(f"Nao foi possivel conectar na API do Brevo: {exc.reason}") from exc
+
+
+def enviar_ata_reuniao_por_email(reuniao):
+    destinatarios = _coletar_destinatarios(reuniao)
+    if not destinatarios:
+        return 0
+
+    if getattr(settings, "BREVO_API_KEY", ""):
+        _enviar_por_brevo_api(reuniao, destinatarios)
+        return len(destinatarios)
+
+    subject, body, filename, pdf = _conteudo_email_ata(reuniao)
     connection = get_connection(timeout=getattr(settings, "EMAIL_TIMEOUT", 10))
     message = EmailMessage(
         subject=subject,
@@ -128,7 +187,6 @@ def enviar_ata_reuniao_por_email(reuniao):
         to=destinatarios,
         connection=connection,
     )
-    filename = f"ata-reuniao-{reuniao.pk}.pdf"
-    message.attach(filename, gerar_pdf_ata_reuniao(reuniao), "application/pdf")
+    message.attach(filename, pdf, "application/pdf")
     message.send(fail_silently=False)
     return len(destinatarios)
