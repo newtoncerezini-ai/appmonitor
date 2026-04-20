@@ -640,6 +640,35 @@ h4,
     background: var(--surface-low);
     border-radius: 0.9rem;
     padding: 1rem;
+    border-top: 0.35rem solid transparent;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.kanban-column.status-nao_iniciado {
+    --status-accent: #64748b;
+    --status-soft: #f1f5f9;
+}
+
+.kanban-column.status-em_andamento {
+    --status-accent: #2563eb;
+    --status-soft: #dbeafe;
+}
+
+.kanban-column.status-atrasado {
+    --status-accent: #dc2626;
+    --status-soft: #fee2e2;
+}
+
+.kanban-column.status-concluido {
+    --status-accent: #16a34a;
+    --status-soft: #dcfce7;
+}
+
+.kanban-column[class*="status-"] {
+    border-top-color: var(--status-accent);
+    background:
+        linear-gradient(180deg, color-mix(in srgb, var(--status-soft) 72%, white) 0%, var(--surface-low) 48%),
+        var(--surface-low);
 }
 
 .kanban-column-head {
@@ -652,14 +681,15 @@ h4,
 
 .kanban-column-head h2 {
     font-size: 1rem;
+    color: var(--primary);
 }
 
 .kanban-column-head span {
     padding: 0.3rem 0.55rem;
     border-radius: 999px;
-    background: var(--surface-lowest);
-    color: var(--primary);
-    font-weight: 700;
+    background: var(--status-accent, var(--surface-lowest));
+    color: white;
+    font-weight: 800;
     font-size: 0.78rem;
 }
 
@@ -676,6 +706,44 @@ h4,
     box-shadow: var(--shadow);
     display: grid;
     gap: 0.35rem;
+}
+
+.kanban-card {
+    border-left: 0.35rem solid var(--status-accent, transparent);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.kanban-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 1.1rem 2.4rem rgba(15, 23, 42, 0.13);
+}
+
+.kanban-card.status-nao_iniciado {
+    --status-accent: #64748b;
+    --status-soft: #f1f5f9;
+}
+
+.kanban-card.status-em_andamento {
+    --status-accent: #2563eb;
+    --status-soft: #dbeafe;
+}
+
+.kanban-card.status-atrasado {
+    --status-accent: #dc2626;
+    --status-soft: #fee2e2;
+}
+
+.kanban-card.status-concluido {
+    --status-accent: #16a34a;
+    --status-soft: #dcfce7;
+}
+
+.kanban-card[class*="status-"] .progress-bar {
+    background: var(--status-soft);
+}
+
+.kanban-card[class*="status-"] .progress-bar span {
+    background: var(--status-accent);
 }
 
 .kanban-card strong {

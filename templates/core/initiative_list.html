@@ -72,14 +72,14 @@
 {% if view_mode == "quadro" %}
     <section class="kanban-board">
         {% for coluna in board_columns %}
-            <article class="kanban-column">
+            <article class="kanban-column status-{{ coluna.key }}">
                 <div class="kanban-column-head">
                     <h2>{{ coluna.title }}</h2>
                     <span>{{ coluna.items|length }}</span>
                 </div>
                 <div class="kanban-stack">
                     {% for iniciativa in coluna.items %}
-                        <a class="kanban-card initiative-hover-card" href="{% url 'core:initiative_detail' iniciativa.pk %}">
+                        <a class="kanban-card initiative-hover-card status-{{ coluna.key }}" href="{% url 'core:initiative_detail' iniciativa.pk %}">
                             <strong>{{ iniciativa.nome }}</strong>
                             <span>{{ iniciativa.objetivo.nome }}</span>
                             <span>Responsavel: {{ iniciativa.responsavel|default:"Nao definido" }}</span>
