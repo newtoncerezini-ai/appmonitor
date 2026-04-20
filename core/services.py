@@ -32,11 +32,23 @@ def _wrap_text(text, limit=92):
     return lines
 
 
-def _append_section(lines, title, content):
-    lines.append("")
-    lines.append(title)
-    for line in str(content or "-").splitlines() or ["-"]:
-        lines.extend(_wrap_text(line))
+def _pdf_text(x, y, text, size=10, color="0 0 0", font="F1"):
+    return f"BT /{font} {size} Tf {color} rg {x} {y} Td ({_safe_pdf_text(text)}) Tj ET"
+
+
+def _pdf_rect(x, y, width, height, color):
+    return f"{color} rg {x} {y} {width} {height} re f"
+
+
+def _pdf_line(x1, y1, x2, y2, color="0.25 0.38 0.55", width=1):
+    return f"{color} RG {width} w {x1} {y1} m {x2} {y2} l S"
+
+
+def _draw_wrapped_text(commands, x, y, text, limit=92, size=9, leading=12, color="0.13 0.18 0.28", max_lines=8):
+    for line in _wrap_text(text, limit=limit)[:max_lines]:
+        commands.append(_pdf_text(x, y, line, size=size, color=color))
+        y -= leading
+    return y
 
 
 def gerar_pdf_ata_reuniao(reuniao):
@@ -53,35 +65,82 @@ def gerar_pdf_ata_reuniao(reuniao):
     if participantes_legado:
         participantes.extend([linha.strip() for linha in participantes_legado.splitlines() if linha.strip()])
 
-    encaminhamentos = []
-    for item in reuniao.encaminhamentos.select_related("responsavel"):
+    data_reuniao = timezone.localtime(reuniao.data_hora)
+    commands = [
+        _pdf_rect(0, 690, 595, 152, "0.02 0.18 0.34"),
+        "0.00 0.57 0.82 rg 330 690 m 420 742 520 730 595 760 l 595 690 l h f",
+        "0.08 0.31 0.55 rg 0 690 m 120 665 230 696 320 742 l 380 772 490 766 595 790 l 595 842 l 0 842 l h f",
+        _pdf_text(52, 790, "ATA DE REUNIAO", size=9, color="0.61 0.91 0.75"),
+        _pdf_text(52, 758, reuniao.titulo.upper()[:48], size=20, color="1 1 1"),
+        _pdf_text(52, 730, f"Empresa: {reuniao.empresa.nome}", size=9, color="0.90 0.96 1"),
+        _pdf_text(52, 714, f"Data: {data_reuniao.strftime('%d/%m/%Y %H:%M')}", size=9, color="0.90 0.96 1"),
+        _pdf_text(315, 730, f"Local: {reuniao.local or '-'}", size=9, color="0.90 0.96 1"),
+        _pdf_text(315, 714, f"Status: {reuniao.get_status_display()}", size=9, color="0.90 0.96 1"),
+    ]
+
+    y = 650
+    commands.extend(
+        [
+            _pdf_text(52, y, "PARTICIPANTES", size=10, color="0.00 0.39 0.22"),
+            _pdf_line(52, y - 8, 543, y - 8, color="0.00 0.39 0.22", width=0.8),
+        ]
+    )
+    y -= 26
+    y = _draw_wrapped_text(commands, 52, y, ", ".join(participantes) if participantes else "-", limit=105, max_lines=4)
+
+    y -= 18
+    commands.extend(
+        [
+            _pdf_text(52, y, "ITENS DA AGENDA", size=10, color="0.00 0.39 0.22"),
+            _pdf_line(52, y - 8, 543, y - 8, color="0.00 0.39 0.22", width=0.8),
+        ]
+    )
+    y -= 26
+    agenda_items = []
+    for bloco in [reuniao.pauta, reuniao.ata, reuniao.decisoes]:
+        agenda_items.extend([linha.strip() for linha in str(bloco or "").splitlines() if linha.strip()])
+    if not agenda_items:
+        agenda_items = ["Nenhum item de agenda registrado."]
+    for index, item in enumerate(agenda_items[:10], start=1):
+        y = _draw_wrapped_text(commands, 68, y, f"{index}. {item}", limit=90, size=9, leading=12, max_lines=2)
+        y -= 4
+
+    y -= 10
+    commands.extend(
+        [
+            _pdf_text(52, y, "ENCAMINHAMENTOS", size=10, color="0.00 0.39 0.22"),
+            _pdf_line(52, y - 8, 543, y - 8, color="0.00 0.39 0.22", width=0.8),
+            _pdf_rect(52, y - 34, 491, 20, "0.90 0.95 0.98"),
+            _pdf_text(60, y - 28, "Item", size=8, color="0.02 0.18 0.34"),
+            _pdf_text(240, y - 28, "Responsavel", size=8, color="0.02 0.18 0.34"),
+            _pdf_text(348, y - 28, "Prazo", size=8, color="0.02 0.18 0.34"),
+            _pdf_text(420, y - 28, "Status", size=8, color="0.02 0.18 0.34"),
+        ]
+    )
+    y -= 52
+    encaminhamentos = list(reuniao.encaminhamentos.select_related("responsavel"))
+    if not encaminhamentos:
+        commands.append(_pdf_text(60, y, "Nenhum encaminhamento registrado.", size=9, color="0.37 0.43 0.52"))
+    for item in encaminhamentos[:12]:
         responsavel = item.responsavel.get_full_name() or item.responsavel.username if item.responsavel else "-"
         prazo = item.prazo.strftime("%d/%m/%Y") if item.prazo else "-"
-        encaminhamentos.append(f"- {item.descricao} | Responsavel: {responsavel} | Prazo: {prazo}")
+        status = "Convertido" if item.ja_gerado else "Pendente"
+        row_y = y
+        commands.append(_pdf_line(52, row_y + 10, 543, row_y + 10, color="0.84 0.89 0.94", width=0.5))
+        _draw_wrapped_text(commands, 60, row_y, item.descricao, limit=34, size=8, leading=10, max_lines=2)
+        _draw_wrapped_text(commands, 240, row_y, responsavel, limit=20, size=8, leading=10, max_lines=2)
+        commands.append(_pdf_text(348, row_y, prazo, size=8, color="0.13 0.18 0.28"))
+        commands.append(_pdf_text(420, row_y, status, size=8, color="0.13 0.18 0.28"))
+        y -= 28
 
-    lines = [
-        "Ata de Reuniao",
-        reuniao.titulo,
-        f"Empresa: {reuniao.empresa.nome}",
-        f"Data: {timezone.localtime(reuniao.data_hora).strftime('%d/%m/%Y %H:%M')}",
-        f"Local: {reuniao.local or '-'}",
-        f"Status: {reuniao.get_status_display()}",
-    ]
-    _append_section(lines, "Participantes", "\n".join(participantes) if participantes else "-")
-    _append_section(lines, "Pauta", reuniao.pauta)
-    _append_section(lines, "Anotacoes da ata", reuniao.ata)
-    _append_section(lines, "Decisoes", reuniao.decisoes)
-    _append_section(lines, "Encaminhamentos", "\n".join(encaminhamentos) if encaminhamentos else "-")
+    commands.extend(
+        [
+            _pdf_line(52, 46, 543, 46, color="0.84 0.89 0.94", width=0.5),
+            _pdf_text(52, 28, "Gerado automaticamente pela Plataforma de Execucao Estrategica", size=8, color="0.37 0.43 0.52"),
+        ]
+    )
 
-    content_lines = []
-    y = 800
-    for index, line in enumerate(lines[:58]):
-        font_size = 16 if index == 0 else 12
-        leading = 22 if index == 0 else 16
-        content_lines.append(f"BT /F1 {font_size} Tf 50 {y} Td ({_safe_pdf_text(line)}) Tj ET")
-        y -= leading
-
-    stream = "\n".join(content_lines).encode("cp1252", errors="replace")
+    stream = "\n".join(commands).encode("cp1252", errors="replace")
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
