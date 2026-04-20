@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from django.conf import settings
@@ -36,6 +37,8 @@ from .models import (
     registrar_historico_sistema,
 )
 from .services import enviar_ata_reuniao_por_email
+
+logger = logging.getLogger(__name__)
 
 
 def _format_history_value(instance, field_name, value):
@@ -893,37 +896,38 @@ class ReuniaoUpdateView(BaseUpdateView):
 
 class ReuniaoFinalizarEnviarView(GestaoExecucaoMixin, View):
     def post(self, request, pk):
-        reuniao = get_object_or_404(
-            Reuniao.objects.prefetch_related(
-                "participantes_usuarios",
-                "participantes_externos_lista",
-                "encaminhamentos__responsavel",
-            ),
-            pk=pk,
-            empresa=request.user.empresa,
-        )
-        status_anterior = reuniao.status
-        if reuniao.status != StatusReuniao.FINALIZADA:
-            reuniao.status = StatusReuniao.FINALIZADA
-            reuniao.save(update_fields=["status", "atualizada_em"])
-            registrar_historico_sistema(
-                request.user.empresa,
-                TipoEntidadeHistorico.REUNIAO,
-                reuniao.pk,
-                reuniao.titulo,
-                "Status",
-                dict(StatusReuniao.choices).get(status_anterior, status_anterior),
-                reuniao.get_status_display(),
-            )
-
         try:
+            reuniao = get_object_or_404(
+                Reuniao.objects.prefetch_related(
+                    "participantes_usuarios",
+                    "participantes_externos_lista",
+                    "encaminhamentos__responsavel",
+                ),
+                pk=pk,
+                empresa=request.user.empresa,
+            )
+            status_anterior = reuniao.status
+            if reuniao.status != StatusReuniao.FINALIZADA:
+                reuniao.status = StatusReuniao.FINALIZADA
+                reuniao.save(update_fields=["status", "atualizada_em"])
+                registrar_historico_sistema(
+                    request.user.empresa,
+                    TipoEntidadeHistorico.REUNIAO,
+                    reuniao.pk,
+                    reuniao.titulo,
+                    "Status",
+                    dict(StatusReuniao.choices).get(status_anterior, status_anterior),
+                    reuniao.get_status_display(),
+                )
+
             total = enviar_ata_reuniao_por_email(reuniao)
         except Exception as exc:
+            logger.exception("Erro ao finalizar e enviar ata da reuniao %s", pk)
             messages.error(
                 request,
-                f"A reuniao foi finalizada, mas o envio por e-mail falhou: {exc}",
+                f"Nao foi possivel finalizar e enviar a ata agora: {exc}",
             )
-            return redirect("core:reuniao_detail", pk=reuniao.pk)
+            return redirect("core:reuniao_detail", pk=pk)
 
         if total:
             if settings.EMAIL_BACKEND.endswith("console.EmailBackend"):
