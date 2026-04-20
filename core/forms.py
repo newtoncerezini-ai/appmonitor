@@ -181,6 +181,15 @@ class ReuniaoForm(BaseEmpresaForm):
         return "[]"
 
     def clean_external_participants_json(self):
+        nomes = self.data.getlist("external_nome") if self.data else []
+        emails = self.data.getlist("external_email") if self.data else []
+        if nomes or emails:
+            participantes = [
+                {"nome": nome, "email": email}
+                for nome, email in zip(nomes, emails)
+            ]
+            return self._clean_external_participants(participantes)
+
         raw_value = self.cleaned_data.get("external_participants_json") or "[]"
         try:
             participantes = json.loads(raw_value)
@@ -190,6 +199,9 @@ class ReuniaoForm(BaseEmpresaForm):
         if not isinstance(participantes, list):
             raise forms.ValidationError("Revise os participantes externos informados.")
 
+        return self._clean_external_participants(participantes)
+
+    def _clean_external_participants(self, participantes):
         cleaned = []
         email_field = forms.EmailField(required=True)
         for participante in participantes:

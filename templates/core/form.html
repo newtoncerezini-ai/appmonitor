@@ -198,12 +198,14 @@ document.addEventListener("DOMContentLoaded", () => {
             row.className = "external-participant-row";
             const nameInput = document.createElement("input");
             nameInput.type = "text";
+            nameInput.name = "external_nome";
             nameInput.dataset.field = "nome";
             nameInput.placeholder = "Nome do convidado";
             nameInput.value = participant.nome || "";
 
             const emailInput = document.createElement("input");
             emailInput.type = "email";
+            emailInput.name = "external_email";
             emailInput.dataset.field = "email";
             emailInput.placeholder = "email@empresa.com";
             emailInput.value = participant.email || "";
