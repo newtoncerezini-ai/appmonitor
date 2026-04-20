@@ -26,12 +26,15 @@ from .models import (
     ObjetivoEstrategico,
     PlanoAcao,
     Reuniao,
+    StatusReuniao,
     StatusWorkflow,
     Tarefa,
     TipoGeracaoEncaminhamento,
     TipoEntidadeHistorico,
     Usuario,
+    registrar_historico_sistema,
 )
+from .services import enviar_ata_reuniao_por_email
 
 
 def _format_history_value(instance, field_name, value):
@@ -56,7 +59,24 @@ def registrar_historico_alteracoes(instance, original, user, form, tipo_entidade
         if field is None:
             continue
 
-        model_field = instance._meta.get_field(field_name)
+        try:
+            model_field = instance._meta.get_field(field_name)
+        except Exception:
+            if field_name != "external_participants_json":
+                continue
+            anterior = previous_m2m_values.get(field_name, [])
+            novo = list(instance.participantes_externos_lista.all().order_by("pk"))
+            HistoricoAlteracao.objects.create(
+                empresa=user.empresa,
+                usuario=user,
+                entidade_tipo=tipo_entidade,
+                entidade_id=instance.pk,
+                entidade_nome=str(instance),
+                campo="Participantes externos",
+                valor_anterior=", ".join(str(item) for item in anterior) if anterior else "-",
+                valor_novo=", ".join(str(item) for item in novo) if novo else "-",
+            )
+            continue
         if model_field.many_to_many:
             anterior = previous_m2m_values.get(field_name, list(getattr(original, field_name).all().order_by("pk")))
             novo = list(getattr(instance, field_name).all().order_by("pk"))
@@ -543,6 +563,9 @@ class BaseUpdateView(GestaoExecucaoMixin, UpdateView):
         original = self.get_queryset().get(pk=self.object.pk)
         previous_m2m_values = {}
         for field_name in form.changed_data:
+            if field_name == "external_participants_json":
+                previous_m2m_values[field_name] = list(original.participantes_externos_lista.all().order_by("pk"))
+                continue
             try:
                 model_field = self.model._meta.get_field(field_name)
             except Exception:
@@ -809,6 +832,7 @@ class ReuniaoDetailView(EmpresaContextMixin, DetailView):
             .select_related("criada_por")
             .prefetch_related(
                 "participantes_usuarios",
+                "participantes_externos_lista",
                 "encaminhamentos__responsavel",
                 "encaminhamentos__objetivo",
                 "encaminhamentos__iniciativa_base",
@@ -864,6 +888,47 @@ class ReuniaoUpdateView(BaseUpdateView):
 
     def get_back_url(self):
         return reverse("core:reuniao_detail", kwargs={"pk": self.object.pk})
+
+
+class ReuniaoFinalizarEnviarView(GestaoExecucaoMixin, View):
+    def post(self, request, pk):
+        reuniao = get_object_or_404(
+            Reuniao.objects.prefetch_related(
+                "participantes_usuarios",
+                "participantes_externos_lista",
+                "encaminhamentos__responsavel",
+            ),
+            pk=pk,
+            empresa=request.user.empresa,
+        )
+        status_anterior = reuniao.status
+        if reuniao.status != StatusReuniao.FINALIZADA:
+            reuniao.status = StatusReuniao.FINALIZADA
+            reuniao.save(update_fields=["status", "atualizada_em"])
+            registrar_historico_sistema(
+                request.user.empresa,
+                TipoEntidadeHistorico.REUNIAO,
+                reuniao.pk,
+                reuniao.titulo,
+                "Status",
+                dict(StatusReuniao.choices).get(status_anterior, status_anterior),
+                reuniao.get_status_display(),
+            )
+
+        try:
+            total = enviar_ata_reuniao_por_email(reuniao)
+        except Exception as exc:
+            messages.error(
+                request,
+                f"A reuniao foi finalizada, mas o envio por e-mail falhou: {exc}",
+            )
+            return redirect("core:reuniao_detail", pk=reuniao.pk)
+
+        if total:
+            messages.success(request, f"Ata finalizada e enviada para {total} destinatario(s).")
+        else:
+            messages.warning(request, "Ata finalizada, mas nenhum participante possui e-mail cadastrado.")
+        return redirect("core:reuniao_detail", pk=reuniao.pk)
 
 
 class EncaminhamentoReuniaoCreateView(GestaoExecucaoMixin, CreateView):

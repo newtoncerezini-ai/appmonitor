@@ -1110,6 +1110,13 @@ h4,
     font-weight: 800;
 }
 
+.external-participant-summary {
+    display: grid;
+    gap: 0.35rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+
 .meeting-action-form {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1493,6 +1500,53 @@ h4,
     color: var(--muted);
 }
 
+.external-participants-builder {
+    display: grid;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px dashed color-mix(in srgb, var(--primary) 18%, transparent);
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--surface-low) 72%, white);
+}
+
+.external-participants-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+}
+
+.external-participants-head strong {
+    display: block;
+    color: var(--primary);
+}
+
+.external-participants-list {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.external-participant-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.external-participant-row input {
+    width: 100%;
+    padding: 0.85rem 0.95rem;
+    border: 1px solid transparent;
+    border-radius: 0.8rem;
+    background: var(--surface-lowest);
+    color: var(--text);
+}
+
+.external-participant-row input:focus {
+    border-color: color-mix(in srgb, var(--primary) 26%, transparent);
+    outline: none;
+}
+
 .empty-selector {
     padding: 0.9rem 1rem;
     border-radius: 0.75rem;
@@ -1600,7 +1654,8 @@ h4,
     .kanban-board,
     .gantt-header,
     .gantt-row,
-    .dependency-panels {
+    .dependency-panels,
+    .external-participant-row {
         grid-template-columns: 1fr;
     }
 

@@ -16,6 +16,7 @@ from .views import (
     GerarItemEncaminhamentoView,
     ReuniaoCreateView,
     ReuniaoDetailView,
+    ReuniaoFinalizarEnviarView,
     ReuniaoListView,
     ReuniaoUpdateView,
     TaskListView,
@@ -47,6 +48,7 @@ urlpatterns = [
     path("reunioes/nova/", ReuniaoCreateView.as_view(), name="reuniao_create"),
     path("reunioes/<int:pk>/", ReuniaoDetailView.as_view(), name="reuniao_detail"),
     path("reunioes/<int:pk>/editar/", ReuniaoUpdateView.as_view(), name="reuniao_update"),
+    path("reunioes/<int:pk>/finalizar-enviar/", ReuniaoFinalizarEnviarView.as_view(), name="reuniao_finalizar_enviar"),
     path("reunioes/<int:reuniao_pk>/encaminhamentos/novo/", EncaminhamentoReuniaoCreateView.as_view(), name="encaminhamento_reuniao_create"),
     path("encaminhamentos/<int:pk>/gerar/", GerarItemEncaminhamentoView.as_view(), name="encaminhamento_gerar_item"),
 ]

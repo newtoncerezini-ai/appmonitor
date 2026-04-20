@@ -29,6 +29,18 @@
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 {% if field.name == "participantes_usuarios" %}
                     {{ field }}
+                    {% if form.external_participants_json %}
+                        <div class="external-participants-builder" data-target-id="{{ form.external_participants_json.id_for_label }}">
+                            <div class="external-participants-head">
+                                <div>
+                                    <strong>Participantes externos</strong>
+                                    <small>Inclua convidados de fora com e-mail para envio da ata consolidada.</small>
+                                </div>
+                                <button type="button" class="secondary-link js-add-external-participant">Adicionar externo</button>
+                            </div>
+                            <div class="external-participants-list"></div>
+                        </div>
+                    {% endif %}
                 {% elif field.name == "dependencias" %}
                     {% if field.subwidgets %}
                         <div class="dependency-selector">
@@ -157,6 +169,66 @@ document.addEventListener("DOMContentLoaded", () => {
 
         renderTrigger();
         renderOptions();
+    });
+
+    document.querySelectorAll(".external-participants-builder").forEach((builder) => {
+        const target = document.getElementById(builder.dataset.targetId);
+        const list = builder.querySelector(".external-participants-list");
+        const addButton = builder.querySelector(".js-add-external-participant");
+
+        function readParticipants() {
+            try {
+                const parsed = JSON.parse(target.value || "[]");
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                return [];
+            }
+        }
+
+        function sync() {
+            const rows = Array.from(list.querySelectorAll(".external-participant-row"));
+            target.value = JSON.stringify(rows.map((row) => ({
+                nome: row.querySelector("[data-field='nome']").value.trim(),
+                email: row.querySelector("[data-field='email']").value.trim(),
+            })).filter((item) => item.nome || item.email));
+        }
+
+        function addRow(participant = {}) {
+            const row = document.createElement("div");
+            row.className = "external-participant-row";
+            const nameInput = document.createElement("input");
+            nameInput.type = "text";
+            nameInput.dataset.field = "nome";
+            nameInput.placeholder = "Nome do convidado";
+            nameInput.value = participant.nome || "";
+
+            const emailInput = document.createElement("input");
+            emailInput.type = "email";
+            emailInput.dataset.field = "email";
+            emailInput.placeholder = "email@empresa.com";
+            emailInput.value = participant.email || "";
+
+            const removeButton = document.createElement("button");
+            removeButton.type = "button";
+            removeButton.className = "ghost-button";
+            removeButton.textContent = "Remover";
+
+            [nameInput, emailInput].forEach((input) => input.addEventListener("input", sync));
+            removeButton.addEventListener("click", () => {
+                row.remove();
+                sync();
+            });
+            row.append(nameInput, emailInput, removeButton);
+            list.appendChild(row);
+            sync();
+        }
+
+        readParticipants().forEach(addRow);
+        if (!list.children.length) {
+            addRow();
+        }
+        addButton.addEventListener("click", () => addRow());
+        sync();
     });
 });
 </script>

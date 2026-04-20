@@ -10,6 +10,7 @@ from .models import (
     ObjetivoEstrategico,
     PlanoAcao,
     Reuniao,
+    ReuniaoParticipanteExterno,
     Tarefa,
     Usuario,
 )
@@ -76,13 +77,18 @@ class EncaminhamentoReuniaoInline(admin.TabularInline):
     extra = 0
 
 
+class ReuniaoParticipanteExternoInline(admin.TabularInline):
+    model = ReuniaoParticipanteExterno
+    extra = 0
+
+
 @admin.register(Reuniao)
 class ReuniaoAdmin(admin.ModelAdmin):
     list_display = ("titulo", "empresa", "data_hora", "status", "criada_por")
     list_filter = ("empresa", "status")
     search_fields = ("titulo", "pauta", "ata", "decisoes", "participantes_externos")
     filter_horizontal = ("participantes_usuarios",)
-    inlines = [EncaminhamentoReuniaoInline]
+    inlines = [ReuniaoParticipanteExternoInline, EncaminhamentoReuniaoInline]
 
 
 @admin.register(EncaminhamentoReuniao)

@@ -354,6 +354,25 @@ class Reuniao(models.Model):
         return self.titulo
 
 
+class ReuniaoParticipanteExterno(models.Model):
+    reuniao = models.ForeignKey(
+        Reuniao,
+        on_delete=models.CASCADE,
+        related_name="participantes_externos_lista",
+    )
+    nome = models.CharField(max_length=180)
+    email = models.EmailField()
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Participante externo de reuniao"
+        verbose_name_plural = "Participantes externos de reuniao"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return f"{self.nome} <{self.email}>"
+
+
 class EncaminhamentoReuniao(models.Model):
     reuniao = models.ForeignKey(
         Reuniao,

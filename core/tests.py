@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+from django.core import mail
+from django.test import override_settings
 from django.test import TestCase
 from django.utils import timezone
 from django.urls import reverse
@@ -12,6 +14,8 @@ from .models import (
     PerfilUsuario,
     PlanoAcao,
     Reuniao,
+    ReuniaoParticipanteExterno,
+    StatusReuniao,
     StatusWorkflow,
     Tarefa,
     TipoEntidadeHistorico,
@@ -193,6 +197,7 @@ class DependenciaIniciativaTests(TestCase):
             password="senha123forte",
             empresa=self.empresa,
             perfil=PerfilUsuario.ADMIN_EMPRESA,
+            email="admin@demo.local",
         )
         self.objetivo = ObjetivoEstrategico.objects.create(
             empresa=self.empresa,
@@ -428,6 +433,7 @@ class ReuniaoTests(TestCase):
         self.empresa = Empresa.objects.create(nome="Empresa Demo", slug="empresa-demo")
         self.usuario = Usuario.objects.create_user(
             username="reuniao_admin",
+            email="admin@demo.local",
             password="senha123forte",
             empresa=self.empresa,
             perfil=PerfilUsuario.ADMIN_EMPRESA,
@@ -453,7 +459,7 @@ class ReuniaoTests(TestCase):
                 "data_hora": "2026-04-20T09:00",
                 "local": "Online",
                 "participantes_usuarios": [self.usuario.pk],
-                "participantes_externos": "Cliente externo",
+                "external_participants_json": '[{"nome":"Cliente externo","email":"cliente@demo.local"}]',
                 "pauta": "Acompanhar execucao",
                 "ata": "Discutimos prioridades.",
                 "decisoes": "Manter foco comercial.",
@@ -465,7 +471,38 @@ class ReuniaoTests(TestCase):
         self.assertTrue(Reuniao.objects.filter(titulo="Reuniao semanal", empresa=self.empresa).exists())
         reuniao = Reuniao.objects.get(titulo="Reuniao semanal", empresa=self.empresa)
         self.assertTrue(reuniao.participantes_usuarios.filter(pk=self.usuario.pk).exists())
-        self.assertEqual(reuniao.participantes_externos, "Cliente externo")
+        self.assertTrue(
+            reuniao.participantes_externos_lista.filter(
+                nome="Cliente externo",
+                email="cliente@demo.local",
+            ).exists()
+        )
+
+    @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+    def test_finaliza_reuniao_e_envia_pdf_para_participantes(self):
+        reuniao = Reuniao.objects.create(
+            empresa=self.empresa,
+            titulo="Reuniao comercial",
+            criada_por=self.usuario,
+            ata="Resumo da conversa.",
+            decisoes="Enviar proposta.",
+        )
+        reuniao.participantes_usuarios.add(self.usuario)
+        ReuniaoParticipanteExterno.objects.create(
+            reuniao=reuniao,
+            nome="Cliente externo",
+            email="cliente@demo.local",
+        )
+
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        response = self.client.post(reverse("core:reuniao_finalizar_enviar", args=[reuniao.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        reuniao.refresh_from_db()
+        self.assertEqual(reuniao.status, StatusReuniao.FINALIZADA)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(set(mail.outbox[0].to), {"admin@demo.local", "cliente@demo.local"})
+        self.assertEqual(mail.outbox[0].attachments[0][2], "application/pdf")
 
     def test_encaminhamento_gera_tarefa(self):
         reuniao = Reuniao.objects.create(

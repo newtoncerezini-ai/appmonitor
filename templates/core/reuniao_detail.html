@@ -34,6 +34,10 @@
     <a class="ghost-button" href="{% url 'core:reuniao_list' %}">Voltar para reunioes</a>
     {% if pode_gerenciar_execucao %}
         <a class="primary-link" href="{% url 'core:reuniao_update' reuniao.pk %}">Editar ata</a>
+        <form method="post" action="{% url 'core:reuniao_finalizar_enviar' reuniao.pk %}" class="inline-form">
+            {% csrf_token %}
+            <button type="submit" class="secondary-link">Finalizar e enviar PDF</button>
+        </form>
     {% endif %}
 </section>
 
@@ -59,7 +63,7 @@
         <div class="meeting-notes-grid">
             <div>
                 <span class="cell-subtitle">Participantes</span>
-                {% if reuniao.participantes_usuarios.all or reuniao.participantes_externos or reuniao.participantes %}
+                {% if reuniao.participantes_usuarios.all or reuniao.participantes_externos_lista.all or reuniao.participantes_externos or reuniao.participantes %}
                     {% if reuniao.participantes_usuarios.all %}
                         <div class="participant-chip-list">
                             {% for participante in reuniao.participantes_usuarios.all %}
@@ -67,7 +71,13 @@
                             {% endfor %}
                         </div>
                     {% endif %}
-                    {% if reuniao.participantes_externos %}
+                    {% if reuniao.participantes_externos_lista.all %}
+                        <div class="external-participant-summary">
+                            {% for participante in reuniao.participantes_externos_lista.all %}
+                                <span>{{ participante.nome }} &lt;{{ participante.email }}&gt;</span>
+                            {% endfor %}
+                        </div>
+                    {% elif reuniao.participantes_externos %}
                         <p>{{ reuniao.participantes_externos|linebreaksbr }}</p>
                     {% elif reuniao.participantes %}
                         <p>{{ reuniao.participantes|linebreaksbr }}</p>
