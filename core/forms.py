@@ -141,11 +141,15 @@ class ReuniaoForm(BaseEmpresaForm):
             "status",
         ]
         widgets = {
-            "data_hora": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "data_hora": forms.DateTimeInput(
+                attrs={"type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
+            ),
         }
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, user=user, **kwargs)
+        self.fields["data_hora"].input_formats = ["%Y-%m-%dT%H:%M"]
         self.fields["participantes_usuarios"].label = "Participantes internos"
         self.fields["participantes_usuarios"].widget = forms.SelectMultiple(
             attrs={"class": "form-control js-user-multiselect"},

@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.core import mail
 from django.test import override_settings
@@ -477,6 +477,54 @@ class ReuniaoTests(TestCase):
                 email="cliente@demo.local",
             ).exists()
         )
+
+    def test_edicao_carrega_e_preserva_dados_da_reuniao(self):
+        reuniao = Reuniao.objects.create(
+            empresa=self.empresa,
+            titulo="Reuniao de acompanhamento",
+            data_hora=timezone.make_aware(datetime(2026, 4, 20, 9, 30)),
+            local="Online",
+            criada_por=self.usuario,
+            pauta="Revisar prioridades",
+            ata="Ata original.",
+            decisoes="Decisao original.",
+            status="em_andamento",
+        )
+        reuniao.participantes_usuarios.add(self.usuario)
+        ReuniaoParticipanteExterno.objects.create(
+            reuniao=reuniao,
+            nome="Cliente externo",
+            email="cliente@demo.local",
+        )
+
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        get_response = self.client.get(reverse("core:reuniao_update", args=[reuniao.pk]))
+
+        self.assertContains(get_response, 'value="2026-04-20T09:30"')
+        self.assertContains(get_response, "Cliente externo")
+        self.assertContains(get_response, "cliente@demo.local")
+        self.assertContains(get_response, f'<option value="{self.usuario.pk}" selected>', html=False)
+
+        post_response = self.client.post(
+            reverse("core:reuniao_update", args=[reuniao.pk]),
+            {
+                "titulo": "Reuniao de acompanhamento",
+                "data_hora": "2026-04-20T09:30",
+                "local": "Online",
+                "participantes_usuarios": [self.usuario.pk],
+                "external_participants_json": '[{"nome":"Cliente externo","email":"cliente@demo.local"}]',
+                "pauta": "Revisar prioridades",
+                "ata": "Ata atualizada.",
+                "decisoes": "Decisao original.",
+                "status": "em_andamento",
+            },
+        )
+
+        self.assertEqual(post_response.status_code, 302)
+        reuniao.refresh_from_db()
+        self.assertEqual(timezone.localtime(reuniao.data_hora).strftime("%Y-%m-%dT%H:%M"), "2026-04-20T09:30")
+        self.assertTrue(reuniao.participantes_usuarios.filter(pk=self.usuario.pk).exists())
+        self.assertTrue(reuniao.participantes_externos_lista.filter(email="cliente@demo.local").exists())
 
     @override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
     def test_finaliza_reuniao_e_envia_pdf_para_participantes(self):

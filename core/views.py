@@ -1,5 +1,6 @@
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Prefetch, Q
@@ -925,7 +926,16 @@ class ReuniaoFinalizarEnviarView(GestaoExecucaoMixin, View):
             return redirect("core:reuniao_detail", pk=reuniao.pk)
 
         if total:
-            messages.success(request, f"Ata finalizada e enviada para {total} destinatario(s).")
+            if settings.EMAIL_BACKEND.endswith("console.EmailBackend"):
+                messages.warning(
+                    request,
+                    (
+                        f"Ata finalizada e PDF gerado para {total} destinatario(s), "
+                        "mas o envio real de e-mail esta em modo console. Configure o SMTP no Railway."
+                    ),
+                )
+            else:
+                messages.success(request, f"Ata finalizada e enviada para {total} destinatario(s).")
         else:
             messages.warning(request, "Ata finalizada, mas nenhum participante possui e-mail cadastrado.")
         return redirect("core:reuniao_detail", pk=reuniao.pk)
