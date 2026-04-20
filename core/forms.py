@@ -136,12 +136,13 @@ class ReuniaoForm(BaseEmpresaForm):
         super().__init__(*args, user=user, **kwargs)
         self.fields["participantes_usuarios"].label = "Participantes internos"
         self.fields["participantes_externos"].label = "Participantes externos"
-        self.fields["participantes_usuarios"].widget = forms.CheckboxSelectMultiple()
+        self.fields["participantes_usuarios"].widget = forms.SelectMultiple(
+            attrs={"class": "form-control js-user-multiselect"},
+        )
         if self.user and self.user.empresa:
             self.fields["participantes_usuarios"].queryset = Usuario.objects.filter(
                 empresa=self.user.empresa,
             ).order_by("first_name", "username")
-        self.fields["participantes_usuarios"].widget.choices = self.fields["participantes_usuarios"].choices
         self.fields["participantes_usuarios"].help_text = "Selecione os usuarios do sistema que participaram da reuniao."
         self.fields["participantes_externos"].help_text = "Inclua convidados externos, um por linha, quando houver."
 

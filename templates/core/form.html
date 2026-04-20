@@ -27,7 +27,9 @@
         {% for field in form %}
             <div class="form-row">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                {% if field.name == "dependencias" or field.name == "participantes_usuarios" %}
+                {% if field.name == "participantes_usuarios" %}
+                    {{ field }}
+                {% elif field.name == "dependencias" %}
                     {% if field.subwidgets %}
                         <div class="dependency-selector">
                             {% for subwidget in field.subwidgets %}
@@ -62,4 +64,100 @@
         </div>
     </form>
 </section>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    document.querySelectorAll(".js-user-multiselect").forEach((select) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "smart-multiselect";
+
+        const trigger = document.createElement("button");
+        trigger.type = "button";
+        trigger.className = "smart-multiselect-trigger";
+        trigger.setAttribute("aria-expanded", "false");
+
+        const dropdown = document.createElement("div");
+        dropdown.className = "smart-multiselect-menu";
+
+        const search = document.createElement("input");
+        search.type = "search";
+        search.className = "smart-multiselect-search";
+        search.placeholder = "Buscar participante...";
+
+        const list = document.createElement("div");
+        list.className = "smart-multiselect-list";
+
+        const options = Array.from(select.options);
+
+        function renderTrigger() {
+            const selected = options.filter((option) => option.selected);
+            if (!selected.length) {
+                trigger.innerHTML = '<span class="smart-placeholder">Selecionar participantes</span>';
+                return;
+            }
+
+            const visible = selected.slice(0, 3)
+                .map((option) => `<span class="smart-chip">${option.text}</span>`)
+                .join("");
+            const extra = selected.length > 3 ? `<span class="smart-chip muted">+${selected.length - 3}</span>` : "";
+            trigger.innerHTML = `${visible}${extra}`;
+        }
+
+        function renderOptions() {
+            const query = search.value.trim().toLowerCase();
+            list.innerHTML = "";
+
+            const filtered = options.filter((option) => option.text.toLowerCase().includes(query));
+            if (!filtered.length) {
+                const empty = document.createElement("div");
+                empty.className = "smart-multiselect-empty";
+                empty.textContent = "Nenhum usuario encontrado.";
+                list.appendChild(empty);
+                return;
+            }
+
+            filtered.forEach((option) => {
+                const item = document.createElement("button");
+                item.type = "button";
+                item.className = option.selected ? "smart-option is-selected" : "smart-option";
+                item.innerHTML = `<span>${option.text}</span><strong>${option.selected ? "Selecionado" : "Selecionar"}</strong>`;
+                item.addEventListener("click", () => {
+                    option.selected = !option.selected;
+                    renderTrigger();
+                    renderOptions();
+                });
+                list.appendChild(item);
+            });
+        }
+
+        trigger.addEventListener("click", () => {
+            const isOpen = wrapper.classList.toggle("is-open");
+            trigger.setAttribute("aria-expanded", String(isOpen));
+            if (isOpen) {
+                search.focus();
+                renderOptions();
+            }
+        });
+
+        search.addEventListener("input", renderOptions);
+
+        document.addEventListener("click", (event) => {
+            if (!wrapper.contains(event.target) && event.target !== select) {
+                wrapper.classList.remove("is-open");
+                trigger.setAttribute("aria-expanded", "false");
+            }
+        });
+
+        dropdown.appendChild(search);
+        dropdown.appendChild(list);
+        wrapper.appendChild(trigger);
+        wrapper.appendChild(dropdown);
+        select.insertAdjacentElement("afterend", wrapper);
+        select.classList.add("native-multiselect-hidden");
+
+        renderTrigger();
+        renderOptions();
+    });
+});
+</script>
 {% endblock %}
