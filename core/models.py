@@ -34,11 +34,23 @@ class StatusWorkflow(models.TextChoices):
     BLOQUEADO = "bloqueado", "Bloqueado"
 
 
+class StatusReuniao(models.TextChoices):
+    PLANEJADA = "planejada", "Planejada"
+    EM_ANDAMENTO = "em_andamento", "Em andamento"
+    FINALIZADA = "finalizada", "Finalizada"
+
+
+class TipoGeracaoEncaminhamento(models.TextChoices):
+    INICIATIVA = "iniciativa", "Iniciativa"
+    TAREFA = "tarefa", "Tarefa"
+
+
 class TipoEntidadeHistorico(models.TextChoices):
     OBJETIVO = "objetivo", "Objetivo"
     INICIATIVA = "iniciativa", "Iniciativa"
     TAREFA = "tarefa", "Tarefa"
     PLANO_ACAO = "plano_acao", "Plano de acao"
+    REUNIAO = "reuniao", "Reuniao"
 
 
 class Usuario(AbstractUser):
@@ -297,6 +309,107 @@ class PlanoAcao(models.Model):
         super().delete(*args, **kwargs)
         tarefa.atualizar_status_automatico()
         iniciativa.atualizar_status_automatico()
+
+
+class Reuniao(models.Model):
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name="reunioes",
+    )
+    titulo = models.CharField(max_length=255)
+    data_hora = models.DateTimeField(default=timezone.now)
+    local = models.CharField(max_length=180, blank=True)
+    participantes = models.TextField(blank=True)
+    pauta = models.TextField(blank=True)
+    ata = models.TextField(blank=True)
+    decisoes = models.TextField(blank=True)
+    status = models.CharField(
+        max_length=20,
+        choices=StatusReuniao.choices,
+        default=StatusReuniao.PLANEJADA,
+    )
+    criada_por = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reunioes_criadas",
+    )
+    criada_em = models.DateTimeField(auto_now_add=True)
+    atualizada_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Reuniao"
+        verbose_name_plural = "Reunioes"
+        ordering = ["-data_hora", "titulo"]
+
+    def __str__(self):
+        return self.titulo
+
+
+class EncaminhamentoReuniao(models.Model):
+    reuniao = models.ForeignKey(
+        Reuniao,
+        on_delete=models.CASCADE,
+        related_name="encaminhamentos",
+    )
+    descricao = models.CharField(max_length=255)
+    detalhes = models.TextField(blank=True)
+    responsavel = models.ForeignKey(
+        Usuario,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="encaminhamentos_reuniao",
+    )
+    prazo = models.DateField(null=True, blank=True)
+    tipo_geracao = models.CharField(
+        max_length=20,
+        choices=TipoGeracaoEncaminhamento.choices,
+        default=TipoGeracaoEncaminhamento.TAREFA,
+    )
+    objetivo = models.ForeignKey(
+        ObjetivoEstrategico,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="encaminhamentos_reuniao",
+    )
+    iniciativa_base = models.ForeignKey(
+        Iniciativa,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="encaminhamentos_reuniao",
+    )
+    iniciativa_gerada = models.ForeignKey(
+        Iniciativa,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="encaminhamentos_origem_reuniao",
+    )
+    tarefa_gerada = models.ForeignKey(
+        Tarefa,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="encaminhamentos_origem_reuniao",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Encaminhamento de reuniao"
+        verbose_name_plural = "Encaminhamentos de reuniao"
+        ordering = ["prazo", "descricao"]
+
+    def __str__(self):
+        return self.descricao
+
+    @property
+    def ja_gerado(self):
+        return bool(self.iniciativa_gerada_id or self.tarefa_gerada_id)
 
 
 class Alerta(models.Model):

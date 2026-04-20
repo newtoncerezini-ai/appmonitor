@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}{{ reuniao.titulo }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Ata de Reuniao</p>
+        <h1>{{ reuniao.titulo }}</h1>
+        <p class="page-intro">{{ reuniao.pauta|default:"Ata aberta para registro de pauta, anotacoes, decisoes e encaminhamentos." }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>Status</span>
+            <strong>{{ reuniao.get_status_display }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>Encaminhamentos</span>
+            <strong>{{ total_encaminhamentos }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>Convertidos</span>
+            <strong>{{ total_gerados }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>Data</span>
+            <strong>{{ reuniao.data_hora|date:"d/m" }}</strong>
+            <small>{{ reuniao.data_hora|date:"H:i" }}</small>
+        </div>
+    </div>
+</section>
+
+<section class="section-toolbar">
+    <a class="ghost-button" href="{% url 'core:reuniao_list' %}">Voltar para reunioes</a>
+    {% if pode_gerenciar_execucao %}
+        <a class="primary-link" href="{% url 'core:reuniao_update' reuniao.pk %}">Editar ata</a>
+    {% endif %}
+</section>
+
+<section class="detail-shell">
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Resumo da Reuniao</p>
+            <h3>Informacoes principais</h3>
+        </div>
+        <div class="meta-grid">
+            <div><span>Data e hora</span><strong>{{ reuniao.data_hora|date:"d/m/Y H:i" }}</strong></div>
+            <div><span>Local</span><strong>{{ reuniao.local|default:"-" }}</strong></div>
+            <div><span>Criada por</span><strong>{{ reuniao.criada_por|default:"-" }}</strong></div>
+            <div><span>Status</span><strong>{{ reuniao.get_status_display }}</strong></div>
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Ata Viva</p>
+            <h3>Anotacoes e decisoes</h3>
+        </div>
+        <div class="meeting-notes-grid">
+            <div>
+                <span class="cell-subtitle">Participantes</span>
+                <p>{{ reuniao.participantes|linebreaksbr|default:"Nenhum participante registrado." }}</p>
+            </div>
+            <div>
+                <span class="cell-subtitle">Decisoes</span>
+                <p>{{ reuniao.decisoes|linebreaksbr|default:"Nenhuma decisao registrada." }}</p>
+            </div>
+            <div class="span-full">
+                <span class="cell-subtitle">Anotacoes da ata</span>
+                <p>{{ reuniao.ata|linebreaksbr|default:"Nenhuma anotacao registrada ainda." }}</p>
+            </div>
+        </div>
+    </article>
+
+    {% if pode_gerenciar_execucao %}
+        <article class="ledger-card">
+            <div class="card-heading">
+                <p class="eyebrow">Durante a Reuniao</p>
+                <h3>Novo encaminhamento</h3>
+            </div>
+            <form method="post" action="{% url 'core:encaminhamento_reuniao_create' reuniao.pk %}" class="meeting-action-form">
+                {% csrf_token %}
+                {% for field in encaminhamento_form %}
+                    <div class="form-row">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <small>{{ field.help_text }}</small>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <div class="form-actions">
+                    <button type="submit">Registrar encaminhamento</button>
+                </div>
+            </form>
+        </article>
+    {% endif %}
+
+    <article class="ledger-card">
+        <div class="section-toolbar">
+            <h2>Encaminhamentos</h2>
+        </div>
+        <div class="list-stack compact">
+            {% for item in encaminhamentos %}
+                <div class="task-row">
+                    <div class="task-main">
+                        <div class="task-title-row">
+                            <h3>{{ item.descricao }}</h3>
+                            <span class="status-pill {% if item.ja_gerado %}success{% else %}neutral{% endif %}">
+                                {% if item.ja_gerado %}Convertido{% else %}Pendente{% endif %}
+                            </span>
+                        </div>
+                        <div class="meta-inline">
+                            <span><strong>Tipo:</strong> {{ item.get_tipo_geracao_display }}</span>
+                            <span><strong>Responsavel:</strong> {{ item.responsavel|default:"Nao definido" }}</span>
+                            <span><strong>Prazo:</strong> {{ item.prazo|default:"-" }}</span>
+                        </div>
+                        {% if item.detalhes %}
+                            <p class="muted">{{ item.detalhes }}</p>
+                        {% endif %}
+                        {% if item.iniciativa_gerada %}
+                            <a class="inline-link" href="{% url 'core:initiative_detail' item.iniciativa_gerada.pk %}">Ver iniciativa gerada</a>
+                        {% elif item.tarefa_gerada %}
+                            <a class="inline-link" href="{% url 'core:tarefa_detail' item.tarefa_gerada.pk %}">Ver tarefa gerada</a>
+                        {% elif pode_gerenciar_execucao %}
+                            <form method="post" action="{% url 'core:encaminhamento_gerar_item' item.pk %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="secondary-link">Gerar {{ item.get_tipo_geracao_display|lower }}</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% empty %}
+                <p class="muted">Nenhum encaminhamento registrado ainda.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+{% endblock %}

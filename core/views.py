@@ -5,18 +5,30 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpResponseForbidden
 from django.http import Http404
+from django.shortcuts import get_object_or_404, redirect
 from django.utils import timezone
 from django.urls import reverse, reverse_lazy
+from django.views import View
 from django.views.generic import CreateView, DetailView, ListView, TemplateView, UpdateView
 
-from .forms import IniciativaForm, ObjetivoEstrategicoForm, PlanoAcaoForm, TarefaForm
+from .forms import (
+    EncaminhamentoReuniaoForm,
+    IniciativaForm,
+    ObjetivoEstrategicoForm,
+    PlanoAcaoForm,
+    ReuniaoForm,
+    TarefaForm,
+)
 from .models import (
+    EncaminhamentoReuniao,
     HistoricoAlteracao,
     Iniciativa,
     ObjetivoEstrategico,
     PlanoAcao,
+    Reuniao,
     StatusWorkflow,
     Tarefa,
+    TipoGeracaoEncaminhamento,
     TipoEntidadeHistorico,
     Usuario,
 )
@@ -87,6 +99,7 @@ class EmpresaContextMixin(LoginRequiredMixin):
                 "iniciativas": empresa.iniciativas.count(),
                 "tarefas": Tarefa.objects.filter(iniciativa__empresa=empresa).count(),
                 "planos": PlanoAcao.objects.filter(tarefa__iniciativa__empresa=empresa).count(),
+                "reunioes": empresa.reunioes.count(),
             },
         }
 
@@ -740,3 +753,178 @@ class TarefaDetailView(EmpresaContextMixin, DetailView):
             }
         )
         return context
+
+
+class ReuniaoListView(EmpresaContextMixin, ListView):
+    model = Reuniao
+    template_name = "core/reuniao_list.html"
+    context_object_name = "reunioes"
+    active_section = "reunioes"
+
+    def get_queryset(self):
+        return (
+            Reuniao.objects.filter(empresa=self.get_empresa())
+            .select_related("criada_por")
+            .prefetch_related("encaminhamentos")
+            .order_by("-data_hora", "titulo")
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        reunioes = self.object_list
+        context.update(
+            {
+                **self.get_base_context(),
+                "page_title": "Reunioes",
+                "page_intro": "Registre atas, decisoes e encaminhamentos durante as reunioes e transforme pontos de acao em iniciativas ou tarefas.",
+                "hero_value": reunioes.count(),
+                "hero_label": "Reunioes registradas",
+                "hero_secondary": EncaminhamentoReuniao.objects.filter(reuniao__empresa=self.get_empresa()).count(),
+                "hero_secondary_label": "Encaminhamentos",
+            }
+        )
+        return context
+
+
+class ReuniaoDetailView(EmpresaContextMixin, DetailView):
+    model = Reuniao
+    template_name = "core/reuniao_detail.html"
+    context_object_name = "reuniao"
+    active_section = "reunioes"
+
+    def get_queryset(self):
+        return (
+            Reuniao.objects.filter(empresa=self.get_empresa())
+            .select_related("criada_por")
+            .prefetch_related(
+                "encaminhamentos__responsavel",
+                "encaminhamentos__objetivo",
+                "encaminhamentos__iniciativa_base",
+                "encaminhamentos__iniciativa_gerada",
+                "encaminhamentos__tarefa_gerada",
+            )
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        encaminhamentos = self.object.encaminhamentos.all()
+        context.update(
+            {
+                **self.get_base_context(),
+                "encaminhamentos": encaminhamentos,
+                "encaminhamento_form": EncaminhamentoReuniaoForm(user=self.request.user, reuniao=self.object),
+                "total_encaminhamentos": encaminhamentos.count(),
+                "total_gerados": sum(1 for item in encaminhamentos if item.ja_gerado),
+            }
+        )
+        return context
+
+
+class ReuniaoCreateView(BaseCreateView):
+    model = Reuniao
+    form_class = ReuniaoForm
+    title = "Nova reuniao"
+    submit_label = "Criar reuniao"
+    success_message = "Reuniao criada com sucesso."
+
+    def form_valid(self, form):
+        form.instance.empresa = self.request.user.empresa
+        form.instance.criada_por = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse("core:reuniao_detail", kwargs={"pk": self.object.pk})
+
+
+class ReuniaoUpdateView(BaseUpdateView):
+    model = Reuniao
+    form_class = ReuniaoForm
+    title = "Editar ata da reuniao"
+    submit_label = "Salvar ata"
+    success_message = "Ata atualizada com sucesso."
+    history_entity_type = TipoEntidadeHistorico.REUNIAO
+
+    def get_queryset(self):
+        return Reuniao.objects.filter(empresa=self.request.user.empresa)
+
+    def get_success_url(self):
+        return reverse("core:reuniao_detail", kwargs={"pk": self.object.pk})
+
+    def get_back_url(self):
+        return reverse("core:reuniao_detail", kwargs={"pk": self.object.pk})
+
+
+class EncaminhamentoReuniaoCreateView(GestaoExecucaoMixin, CreateView):
+    model = EncaminhamentoReuniao
+    form_class = EncaminhamentoReuniaoForm
+    http_method_names = ["post"]
+
+    def dispatch(self, request, *args, **kwargs):
+        self.reuniao = get_object_or_404(Reuniao, pk=kwargs["reuniao_pk"], empresa=request.user.empresa)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        kwargs["reuniao"] = self.reuniao
+        return kwargs
+
+    def form_valid(self, form):
+        form.instance.reuniao = self.reuniao
+        response = super().form_valid(form)
+        messages.success(self.request, "Encaminhamento registrado com sucesso.")
+        return response
+
+    def form_invalid(self, form):
+        messages.error(self.request, "Nao foi possivel registrar o encaminhamento. Confira os campos.")
+        return redirect("core:reuniao_detail", pk=self.reuniao.pk)
+
+    def get_success_url(self):
+        return reverse("core:reuniao_detail", kwargs={"pk": self.reuniao.pk})
+
+
+class GerarItemEncaminhamentoView(GestaoExecucaoMixin, View):
+    def post(self, request, pk):
+        encaminhamento = get_object_or_404(
+            EncaminhamentoReuniao.objects.select_related("reuniao", "responsavel", "objetivo", "iniciativa_base"),
+            pk=pk,
+            reuniao__empresa=request.user.empresa,
+        )
+        if encaminhamento.ja_gerado:
+            messages.info(request, "Este encaminhamento ja foi convertido.")
+            return redirect("core:reuniao_detail", pk=encaminhamento.reuniao_id)
+
+        if encaminhamento.tipo_geracao == TipoGeracaoEncaminhamento.INICIATIVA:
+            if not encaminhamento.objetivo_id:
+                messages.error(request, "Selecione um objetivo para gerar uma iniciativa.")
+                return redirect("core:reuniao_detail", pk=encaminhamento.reuniao_id)
+            iniciativa = Iniciativa.objects.create(
+                empresa=request.user.empresa,
+                objetivo=encaminhamento.objetivo,
+                nome=encaminhamento.descricao,
+                descricao=(
+                    f"Gerada a partir da reuniao: {encaminhamento.reuniao.titulo}\n\n"
+                    f"{encaminhamento.detalhes}"
+                ).strip(),
+                responsavel=encaminhamento.responsavel,
+                data_inicio=timezone.localdate(),
+                data_fim=encaminhamento.prazo,
+            )
+            encaminhamento.iniciativa_gerada = iniciativa
+            encaminhamento.save(update_fields=["iniciativa_gerada"])
+            messages.success(request, "Iniciativa gerada a partir da reuniao.")
+        else:
+            if not encaminhamento.iniciativa_base_id:
+                messages.error(request, "Selecione uma iniciativa para gerar uma tarefa.")
+                return redirect("core:reuniao_detail", pk=encaminhamento.reuniao_id)
+            tarefa = Tarefa.objects.create(
+                iniciativa=encaminhamento.iniciativa_base,
+                nome=encaminhamento.descricao,
+                responsavel=encaminhamento.responsavel,
+                data_vencimento=encaminhamento.prazo,
+            )
+            encaminhamento.tarefa_gerada = tarefa
+            encaminhamento.save(update_fields=["tarefa_gerada"])
+            messages.success(request, "Tarefa gerada a partir da reuniao.")
+
+        return redirect("core:reuniao_detail", pk=encaminhamento.reuniao_id)

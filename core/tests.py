@@ -11,6 +11,7 @@ from .models import (
     ObjetivoEstrategico,
     PerfilUsuario,
     PlanoAcao,
+    Reuniao,
     StatusWorkflow,
     Tarefa,
     TipoEntidadeHistorico,
@@ -420,5 +421,101 @@ class IniciativaDetalheTests(TestCase):
                 entidade_id=plano.pk,
             ).exists()
         )
+
+
+class ReuniaoTests(TestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome="Empresa Demo", slug="empresa-demo")
+        self.usuario = Usuario.objects.create_user(
+            username="reuniao_admin",
+            password="senha123forte",
+            empresa=self.empresa,
+            perfil=PerfilUsuario.ADMIN_EMPRESA,
+        )
+        self.objetivo = ObjetivoEstrategico.objects.create(
+            empresa=self.empresa,
+            nome="Crescer operacao",
+            descricao="Organizar crescimento.",
+        )
+        self.iniciativa = Iniciativa.objects.create(
+            empresa=self.empresa,
+            objetivo=self.objetivo,
+            nome="Implantar rotina",
+            responsavel=self.usuario,
+        )
+
+    def test_cria_reuniao_pela_interface(self):
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        response = self.client.post(
+            reverse("core:reuniao_create"),
+            {
+                "titulo": "Reuniao semanal",
+                "data_hora": "2026-04-20T09:00",
+                "local": "Online",
+                "participantes": "Equipe",
+                "pauta": "Acompanhar execucao",
+                "ata": "Discutimos prioridades.",
+                "decisoes": "Manter foco comercial.",
+                "status": "em_andamento",
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Reuniao.objects.filter(titulo="Reuniao semanal", empresa=self.empresa).exists())
+
+    def test_encaminhamento_gera_tarefa(self):
+        reuniao = Reuniao.objects.create(
+            empresa=self.empresa,
+            titulo="Reuniao de execucao",
+            criada_por=self.usuario,
+        )
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        response = self.client.post(
+            reverse("core:encaminhamento_reuniao_create", args=[reuniao.pk]),
+            {
+                "descricao": "Atualizar painel semanal",
+                "detalhes": "Consolidar dados de vendas.",
+                "responsavel": self.usuario.pk,
+                "prazo": "2026-04-30",
+                "tipo_geracao": "tarefa",
+                "objetivo": "",
+                "iniciativa_base": self.iniciativa.pk,
+            },
+        )
+        encaminhamento = reuniao.encaminhamentos.get()
+        gerar_response = self.client.post(reverse("core:encaminhamento_gerar_item", args=[encaminhamento.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(gerar_response.status_code, 302)
+        encaminhamento.refresh_from_db()
+        self.assertIsNotNone(encaminhamento.tarefa_gerada)
+        self.assertEqual(encaminhamento.tarefa_gerada.nome, "Atualizar painel semanal")
+
+    def test_encaminhamento_gera_iniciativa(self):
+        reuniao = Reuniao.objects.create(
+            empresa=self.empresa,
+            titulo="Reuniao estrategica",
+            criada_por=self.usuario,
+        )
+        self.client.login(username="reuniao_admin", password="senha123forte")
+        self.client.post(
+            reverse("core:encaminhamento_reuniao_create", args=[reuniao.pk]),
+            {
+                "descricao": "Criar ritual comercial",
+                "detalhes": "Novo ritual semanal de pipeline.",
+                "responsavel": self.usuario.pk,
+                "prazo": "2026-05-15",
+                "tipo_geracao": "iniciativa",
+                "objetivo": self.objetivo.pk,
+                "iniciativa_base": "",
+            },
+        )
+        encaminhamento = reuniao.encaminhamentos.get()
+        response = self.client.post(reverse("core:encaminhamento_gerar_item", args=[encaminhamento.pk]))
+
+        self.assertEqual(response.status_code, 302)
+        encaminhamento.refresh_from_db()
+        self.assertIsNotNone(encaminhamento.iniciativa_gerada)
+        self.assertEqual(encaminhamento.iniciativa_gerada.objetivo, self.objetivo)
 
 # Create your tests here.

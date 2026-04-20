@@ -63,6 +63,16 @@
                         <span>Tarefas</span>
                         <strong class="nav-count">{{ nav_counts.tarefas }}</strong>
                     </a>
+                    <a class="{% if active_section == 'reunioes' %}is-active{% endif %}" href="{% url 'core:reuniao_list' %}">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M6 6.5h12M6 11h12M6 15.5h7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                <path d="M5 3.8h14A1.2 1.2 0 0 1 20.2 5v14A1.2 1.2 0 0 1 19 20.2H5A1.2 1.2 0 0 1 3.8 19V5A1.2 1.2 0 0 1 5 3.8Z" stroke="currentColor" stroke-width="1.7"/>
+                            </svg>
+                        </span>
+                        <span>Reunioes</span>
+                        <strong class="nav-count">{{ nav_counts.reunioes }}</strong>
+                    </a>
                 </nav>
             </div>
 
@@ -101,6 +111,7 @@
             <a class="{% if active_section == 'objetivos' %}is-active{% endif %}" href="{% url 'core:objective_list' %}">Objetivos</a>
             <a class="{% if active_section == 'iniciativas' %}is-active{% endif %}" href="{% url 'core:initiative_list' %}">Iniciativas</a>
             <a class="{% if active_section == 'tarefas' %}is-active{% endif %}" href="{% url 'core:task_list' %}">Tarefas</a>
+            <a class="{% if active_section == 'reunioes' %}is-active{% endif %}" href="{% url 'core:reuniao_list' %}">Reunioes</a>
         </nav>
     {% endif %}
 </body>

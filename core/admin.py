@@ -3,11 +3,13 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import (
     Alerta,
+    EncaminhamentoReuniao,
     Empresa,
     HistoricoAlteracao,
     Iniciativa,
     ObjetivoEstrategico,
     PlanoAcao,
+    Reuniao,
     Tarefa,
     Usuario,
 )
@@ -67,6 +69,26 @@ class PlanoAcaoAdmin(admin.ModelAdmin):
     list_display = ("etapa", "tarefa", "status", "responsavel", "data_inicio_prevista", "data_fim_prevista")
     list_filter = ("tarefa__iniciativa__empresa", "status")
     search_fields = ("etapa", "observacoes")
+
+
+class EncaminhamentoReuniaoInline(admin.TabularInline):
+    model = EncaminhamentoReuniao
+    extra = 0
+
+
+@admin.register(Reuniao)
+class ReuniaoAdmin(admin.ModelAdmin):
+    list_display = ("titulo", "empresa", "data_hora", "status", "criada_por")
+    list_filter = ("empresa", "status")
+    search_fields = ("titulo", "pauta", "ata", "decisoes")
+    inlines = [EncaminhamentoReuniaoInline]
+
+
+@admin.register(EncaminhamentoReuniao)
+class EncaminhamentoReuniaoAdmin(admin.ModelAdmin):
+    list_display = ("descricao", "reuniao", "tipo_geracao", "responsavel", "prazo")
+    list_filter = ("reuniao__empresa", "tipo_geracao")
+    search_fields = ("descricao", "detalhes", "reuniao__titulo")
 
 
 @admin.register(Alerta)

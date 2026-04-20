@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Iniciativa, ObjetivoEstrategico, PlanoAcao, Tarefa, Usuario
+from .models import EncaminhamentoReuniao, Iniciativa, ObjetivoEstrategico, PlanoAcao, Reuniao, Tarefa, Usuario
 
 
 class BaseEmpresaForm(forms.ModelForm):
@@ -112,3 +112,43 @@ class PlanoAcaoForm(BaseEmpresaForm):
         if tarefa is not None:
             self.fields["tarefa"].initial = tarefa
             self.fields["tarefa"].queryset = Tarefa.objects.filter(pk=tarefa.pk)
+
+
+class ReuniaoForm(BaseEmpresaForm):
+    class Meta:
+        model = Reuniao
+        fields = ["titulo", "data_hora", "local", "participantes", "pauta", "ata", "decisoes", "status"]
+        widgets = {
+            "data_hora": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+        }
+
+
+class EncaminhamentoReuniaoForm(BaseEmpresaForm):
+    date_fields = ("prazo",)
+
+    class Meta:
+        model = EncaminhamentoReuniao
+        fields = [
+            "descricao",
+            "detalhes",
+            "responsavel",
+            "prazo",
+            "tipo_geracao",
+            "objetivo",
+            "iniciativa_base",
+        ]
+
+    def __init__(self, *args, user=None, reuniao=None, **kwargs):
+        self.reuniao = reuniao
+        super().__init__(*args, user=user, **kwargs)
+        if self.user and self.user.empresa:
+            self.fields["responsavel"].queryset = Usuario.objects.filter(empresa=self.user.empresa).order_by(
+                "first_name",
+                "username",
+            )
+            self.fields["objetivo"].queryset = ObjetivoEstrategico.objects.filter(empresa=self.user.empresa).order_by("nome")
+            self.fields["iniciativa_base"].queryset = Iniciativa.objects.filter(empresa=self.user.empresa).order_by("nome")
+        self.fields["objetivo"].required = False
+        self.fields["iniciativa_base"].required = False
+        self.fields["objetivo"].help_text = "Use quando este encaminhamento for virar uma iniciativa."
+        self.fields["iniciativa_base"].help_text = "Use quando este encaminhamento for virar uma tarefa."

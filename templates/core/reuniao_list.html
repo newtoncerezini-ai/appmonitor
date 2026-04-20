@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Reunioes{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Atas e Reunioes</p>
+        <h1>{{ page_title }}</h1>
+        <p class="page-intro">{{ page_intro }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>{{ hero_label }}</span>
+            <strong>{{ hero_value }}</strong>
+        </div>
+        <div class="hero-metric">
+            <span>{{ hero_secondary_label }}</span>
+            <strong>{{ hero_secondary }}</strong>
+        </div>
+    </div>
+</section>
+
+<section class="section-toolbar">
+    {% if pode_gerenciar_execucao %}
+        <a class="primary-link" href="{% url 'core:reuniao_create' %}">Nova reuniao</a>
+    {% endif %}
+</section>
+
+<section class="list-stack">
+    {% for reuniao in reunioes %}
+        <article class="ledger-card ledger-card-split">
+            <div class="ledger-main">
+                <div class="ledger-title-row">
+                    <h2>{{ reuniao.titulo }}</h2>
+                    <span class="status-pill {% if reuniao.status == 'finalizada' %}success{% elif reuniao.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                        {{ reuniao.get_status_display }}
+                    </span>
+                </div>
+                <p class="ledger-description">{{ reuniao.pauta|default:"Sem pauta cadastrada." }}</p>
+                <div class="meta-grid">
+                    <div><span>Data</span><strong>{{ reuniao.data_hora|date:"d/m/Y H:i" }}</strong></div>
+                    <div><span>Local</span><strong>{{ reuniao.local|default:"-" }}</strong></div>
+                    <div><span>Criada por</span><strong>{{ reuniao.criada_por|default:"-" }}</strong></div>
+                    <div><span>Encaminhamentos</span><strong>{{ reuniao.encaminhamentos.count }}</strong></div>
+                </div>
+                <div class="ledger-actions">
+                    <a class="secondary-link" href="{% url 'core:reuniao_detail' reuniao.pk %}">Abrir ata</a>
+                </div>
+            </div>
+            <aside class="ledger-side">
+                <h3>Decisoes</h3>
+                <p class="muted">{{ reuniao.decisoes|default:"Nenhuma decisao registrada ainda."|truncatechars:180 }}</p>
+            </aside>
+        </article>
+    {% empty %}
+        <article class="empty-card">
+            <h2>Nenhuma reuniao registrada</h2>
+            <p>Crie a primeira ata para registrar decisoes, encaminhamentos e gerar tarefas ou iniciativas.</p>
+        </article>
+    {% endfor %}
+</section>
+{% endblock %}
