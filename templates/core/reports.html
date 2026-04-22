@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Relatorios{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <div>
+        <p class="eyebrow">Centro de Relatorios</p>
+        <h1>{{ page_title }}</h1>
+        <p class="page-intro">{{ page_intro }}</p>
+    </div>
+    <div class="hero-side">
+        <div class="hero-metric">
+            <span>Tarefas filtradas</span>
+            <strong>{{ kpis.tarefas_total }}</strong>
+            <small>{{ kpis.tarefas_progresso }}% concluidas</small>
+        </div>
+        <div class="hero-metric">
+            <span>Iniciativas filtradas</span>
+            <strong>{{ kpis.iniciativas_total }}</strong>
+            <small>{{ kpis.iniciativas_progresso }}% concluidas</small>
+        </div>
+        <div class="hero-metric">
+            <span>Riscos</span>
+            <strong>{{ kpis.tarefas_atrasadas }}</strong>
+            <small>Tarefas atrasadas ou vencidas</small>
+        </div>
+        <div class="hero-metric">
+            <span>Em aberto</span>
+            <strong>{{ kpis.tarefas_abertas }}</strong>
+            <small>Tarefas ainda em execucao</small>
+        </div>
+    </div>
+</section>
+
+<section class="filters-card">
+    <div class="report-export-bar">
+        <div>
+            <p class="eyebrow">Exportacao</p>
+            <h3>Baixe o relatorio com os filtros atuais</h3>
+        </div>
+        <div class="report-export-actions">
+            <a class="secondary-link" href="{% url 'core:reports_export_csv' %}{% if report_querystring %}?{{ report_querystring }}{% endif %}">Exportar CSV</a>
+            <a class="primary-link" href="{% url 'core:reports_export_pdf' %}{% if report_querystring %}?{{ report_querystring }}{% endif %}">Exportar PDF</a>
+        </div>
+    </div>
+    <form method="get" class="report-filters">
+        <div class="filter-group">
+            <label for="responsavel">Responsavel</label>
+            <select id="responsavel" name="responsavel">
+                <option value="">Todos</option>
+                {% for usuario in filter_options.responsaveis %}
+                    <option value="{{ usuario.pk }}" {% if filters.responsavel == usuario.pk|stringformat:"s" %}selected{% endif %}>{{ usuario }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="objetivo">Objetivo</label>
+            <select id="objetivo" name="objetivo">
+                <option value="">Todos</option>
+                {% for objetivo in filter_options.objetivos %}
+                    <option value="{{ objetivo.pk }}" {% if filters.objetivo == objetivo.pk|stringformat:"s" %}selected{% endif %}>{{ objetivo.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="iniciativa">Iniciativa</label>
+            <select id="iniciativa" name="iniciativa">
+                <option value="">Todas</option>
+                {% for iniciativa in filter_options.iniciativas %}
+                    <option value="{{ iniciativa.pk }}" {% if filters.iniciativa == iniciativa.pk|stringformat:"s" %}selected{% endif %}>{{ iniciativa.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="">Todos</option>
+                {% for value, label in filter_options.status_options %}
+                    <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="data_inicio">De</label>
+            <input id="data_inicio" type="date" name="data_inicio" value="{{ filters.data_inicio }}">
+        </div>
+        <div class="filter-group">
+            <label for="data_fim">Ate</label>
+            <input id="data_fim" type="date" name="data_fim" value="{{ filters.data_fim }}">
+        </div>
+        <div class="filter-actions report-filter-actions">
+            <a class="ghost-button" href="{% url 'core:reports' %}">Limpar</a>
+            <button class="primary-link" type="submit">Aplicar filtros</button>
+        </div>
+    </form>
+</section>
+
+<section class="report-grid">
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Execucao</p>
+            <h3>Tarefas por status</h3>
+        </div>
+        <div class="status-report-list">
+            {% for item in status_tarefas %}
+                <div class="status-report-item">
+                    <span class="status-pill {% if item.key == 'concluido' %}success{% elif item.key == 'atrasado' %}risk{% elif item.key == 'em_andamento' %}active{% else %}neutral{% endif %}">{{ item.label }}</span>
+                    <strong>{{ item.total }}</strong>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Carteira</p>
+            <h3>Iniciativas por status</h3>
+        </div>
+        <div class="status-report-list">
+            {% for item in status_iniciativas %}
+                <div class="status-report-item">
+                    <span class="status-pill {% if item.key == 'concluido' %}success{% elif item.key == 'atrasado' %}risk{% elif item.key == 'em_andamento' %}active{% else %}neutral{% endif %}">{{ item.label }}</span>
+                    <strong>{{ item.total }}</strong>
+                </div>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Risco</p>
+            <h3>Tarefas com atencao</h3>
+        </div>
+        <div class="report-list">
+            {% for tarefa in tarefas_risco %}
+                <a class="report-list-item" href="{% url 'core:tarefa_detail' tarefa.pk %}">
+                    <strong>{{ tarefa.nome }}</strong>
+                    <span>{{ tarefa.iniciativa.nome }} - {{ tarefa.responsavel|default:"Sem responsavel" }}</span>
+                    <small>Vencimento: {{ tarefa.data_vencimento|default:"-" }}</small>
+                </a>
+            {% empty %}
+                <p class="muted">Nenhum risco encontrado para os filtros atuais.</p>
+            {% endfor %}
+        </div>
+    </article>
+
+    <article class="ledger-card">
+        <div class="card-heading">
+            <p class="eyebrow">Agenda</p>
+            <h3>Proximos vencimentos</h3>
+        </div>
+        <div class="report-list">
+            {% for tarefa in proximos_vencimentos %}
+                <a class="report-list-item" href="{% url 'core:tarefa_detail' tarefa.pk %}">
+                    <strong>{{ tarefa.nome }}</strong>
+                    <span>{{ tarefa.iniciativa.nome }} - {{ tarefa.responsavel|default:"Sem responsavel" }}</span>
+                    <small>Vence em {{ tarefa.data_vencimento }}</small>
+                </a>
+            {% empty %}
+                <p class="muted">Nenhum vencimento nos proximos 7 dias.</p>
+            {% endfor %}
+        </div>
+    </article>
+</section>
+
+<section class="ledger-card report-table-card">
+    <div class="card-heading">
+        <p class="eyebrow">Responsaveis</p>
+        <h3>Relatorio por responsavel</h3>
+    </div>
+    <div class="table-wrap">
+        <table class="ledger-table">
+            <thead>
+                <tr>
+                    <th>Responsavel</th>
+                    <th>Tarefas</th>
+                    <th>Abertas</th>
+                    <th>Atrasadas</th>
+                    <th>Iniciativas</th>
+                    <th>Progresso</th>
+                    <th>Proximo vencimento</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in responsavel_rows %}
+                    <tr>
+                        <td>
+                            <strong>{{ row.usuario|default:"Sem responsavel" }}</strong>
+                            <span class="cell-subtitle">{{ row.cargo }}</span>
+                        </td>
+                        <td>{{ row.tarefas_total }}</td>
+                        <td>{{ row.tarefas_abertas }}</td>
+                        <td>{{ row.tarefas_atrasadas }}</td>
+                        <td>{{ row.iniciativas_total }}</td>
+                        <td>
+                            <div class="report-progress">
+                                <span style="width: {{ row.progresso }}%"></span>
+                            </div>
+                            <strong>{{ row.progresso }}%</strong>
+                        </td>
+                        <td>
+                            {% if row.proximo_vencimento %}
+                                <a class="inline-link" href="{% url 'core:tarefa_detail' row.proximo_vencimento.pk %}">{{ row.proximo_vencimento.data_vencimento }}</a>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">Nenhum responsavel encontrado para os filtros atuais.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="ledger-card report-table-card">
+    <div class="card-heading">
+        <p class="eyebrow">Iniciativas</p>
+        <h3>Relatorio por iniciativa</h3>
+    </div>
+    <div class="table-wrap">
+        <table class="ledger-table">
+            <thead>
+                <tr>
+                    <th>Iniciativa</th>
+                    <th>Responsavel</th>
+                    <th>Status</th>
+                    <th>Tarefas</th>
+                    <th>Atrasadas</th>
+                    <th>Dependencias</th>
+                    <th>Progresso</th>
+                    <th>Fim</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in iniciativa_rows %}
+                    <tr>
+                        <td>
+                            <a class="inline-link" href="{% url 'core:initiative_detail' row.iniciativa.pk %}">{{ row.iniciativa.nome }}</a>
+                            <span class="cell-subtitle">{{ row.objetivo.nome }}</span>
+                        </td>
+                        <td>{{ row.responsavel|default:"Nao definido" }}</td>
+                        <td>
+                            <span class="status-pill {% if row.iniciativa.status == 'concluido' %}success{% elif row.iniciativa.status == 'atrasado' %}risk{% elif row.iniciativa.status == 'em_andamento' %}active{% else %}neutral{% endif %}">
+                                {{ row.iniciativa.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ row.tarefas_total }}</td>
+                        <td>{{ row.tarefas_atrasadas }}</td>
+                        <td>{{ row.dependencias_total }}</td>
+                        <td>
+                            <div class="report-progress">
+                                <span style="width: {{ row.progresso }}%"></span>
+                            </div>
+                            <strong>{{ row.progresso }}%</strong>
+                        </td>
+                        <td>{{ row.iniciativa.data_fim|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8">Nenhuma iniciativa encontrada para os filtros atuais.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

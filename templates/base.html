@@ -73,6 +73,16 @@
                         <span>Reunioes</span>
                         <strong class="nav-count">{{ nav_counts.reunioes }}</strong>
                     </a>
+                    <a class="{% if active_section == 'relatorios' %}is-active{% endif %}" href="{% url 'core:reports' %}">
+                        <span class="nav-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <path d="M5 19.5V4.5M5 19.5h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                <path d="M8.5 15.5v-4M12 15.5V8M15.5 15.5v-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                <path d="M8 5h10.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Relatorios</span>
+                    </a>
                 </nav>
             </div>
 
@@ -112,6 +122,7 @@
             <a class="{% if active_section == 'iniciativas' %}is-active{% endif %}" href="{% url 'core:initiative_list' %}">Iniciativas</a>
             <a class="{% if active_section == 'tarefas' %}is-active{% endif %}" href="{% url 'core:task_list' %}">Tarefas</a>
             <a class="{% if active_section == 'reunioes' %}is-active{% endif %}" href="{% url 'core:reuniao_list' %}">Reunioes</a>
+            <a class="{% if active_section == 'relatorios' %}is-active{% endif %}" href="{% url 'core:reports' %}">Relatorios</a>
         </nav>
     {% endif %}
 </body>

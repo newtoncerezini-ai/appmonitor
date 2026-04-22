@@ -561,6 +561,15 @@ h4,
     color: var(--text);
 }
 
+.filter-group input {
+    width: 100%;
+    border: 1px solid var(--outline);
+    background: var(--surface-lowest);
+    border-radius: 0.5rem;
+    padding: 0.9rem 1rem;
+    color: var(--text);
+}
+
 .view-switch {
     display: inline-grid;
     grid-template-columns: repeat(3, auto);
@@ -590,6 +599,127 @@ h4,
     align-items: center;
     justify-content: flex-end;
     flex-wrap: wrap;
+}
+
+.report-filters {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: end;
+}
+
+.report-export-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--outline);
+}
+
+.report-export-bar h3 {
+    margin: 0;
+    color: var(--primary);
+}
+
+.report-export-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.report-filter-actions {
+    grid-column: span 2;
+}
+
+.report-filter-actions > * {
+    min-height: 3.1rem;
+}
+
+.report-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+}
+
+.report-grid > .ledger-card {
+    display: grid;
+    align-content: start;
+    gap: 0.8rem;
+}
+
+.status-report-list,
+.report-list {
+    display: grid;
+    gap: 0.65rem;
+}
+
+.status-report-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.8rem 0;
+    border-top: 1px solid var(--outline);
+}
+
+.status-report-item:first-child {
+    border-top: 0;
+}
+
+.status-report-item strong {
+    color: var(--primary);
+    font-family: "Manrope", sans-serif;
+    font-size: 1.35rem;
+}
+
+.report-list-item {
+    display: grid;
+    gap: 0.25rem;
+    padding: 0.85rem 0;
+    border-top: 1px solid var(--outline);
+}
+
+.report-list-item:first-child {
+    border-top: 0;
+}
+
+.report-list-item strong {
+    color: var(--primary);
+}
+
+.report-list-item span,
+.report-list-item small {
+    color: var(--muted);
+}
+
+.report-table-card {
+    margin-bottom: 1.5rem;
+}
+
+.report-progress {
+    width: 7.5rem;
+    max-width: 100%;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: rgba(36, 87, 230, 0.11);
+    overflow: hidden;
+    margin-bottom: 0.35rem;
+}
+
+.report-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #2457e6 0%, #18a6b8 100%);
+}
+
+.ledger-table .cell-subtitle {
+    display: block;
+    margin-top: 0.3rem;
 }
 
 .dependency-list,
@@ -1653,12 +1783,25 @@ h4,
     }
 
     .initiative-filters,
+    .report-filters,
     .kanban-board,
     .gantt-header,
     .gantt-row,
     .dependency-panels,
     .external-participant-row {
         grid-template-columns: 1fr;
+    }
+
+    .report-filter-actions {
+        grid-column: auto;
+    }
+
+    .report-export-bar {
+        display: grid;
+    }
+
+    .report-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .page-shell.with-sidebar {
@@ -1691,6 +1834,10 @@ h4,
     }
 
     .action-stack {
+        grid-template-columns: 1fr;
+    }
+
+    .report-grid {
         grid-template-columns: 1fr;
     }
 

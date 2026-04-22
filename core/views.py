@@ -5,6 +5,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Prefetch, Q
+from django.http import HttpResponse
 from django.http import HttpResponseForbidden
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect
@@ -36,6 +37,7 @@ from .models import (
     Usuario,
     registrar_historico_sistema,
 )
+from .report_services import build_reports_context, generate_reports_csv, generate_reports_pdf
 from .services import enviar_ata_reuniao_por_email
 
 logger = logging.getLogger(__name__)
@@ -461,6 +463,49 @@ class TaskListView(EmpresaContextMixin, ListView):
             }
         )
         return context
+
+
+class ReportsView(EmpresaContextMixin, TemplateView):
+    template_name = "core/reports.html"
+    active_section = "relatorios"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update(
+            {
+                **self.get_base_context(),
+                "page_title": "Relatorios",
+                "page_intro": (
+                    "Acompanhe a execucao por responsavel, iniciativa, status e risco "
+                    "com filtros para apoiar reunioes e decisoes gerenciais."
+                ),
+                **build_reports_context(self.get_empresa(), self.request.GET),
+            }
+        )
+        return context
+
+
+class ReportsExportBaseView(EmpresaContextMixin, View):
+    def get_report_context(self):
+        return build_reports_context(self.get_empresa(), self.request.GET)
+
+
+class ReportsCsvExportView(ReportsExportBaseView):
+    def get(self, request, *args, **kwargs):
+        empresa = self.get_empresa()
+        content = generate_reports_csv(empresa, self.get_report_context())
+        response = HttpResponse(content, content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = 'attachment; filename="relatorios-execucao.csv"'
+        return response
+
+
+class ReportsPdfExportView(ReportsExportBaseView):
+    def get(self, request, *args, **kwargs):
+        empresa = self.get_empresa()
+        content = generate_reports_pdf(empresa, self.get_report_context())
+        response = HttpResponse(content, content_type="application/pdf")
+        response["Content-Disposition"] = 'attachment; filename="relatorios-execucao.pdf"'
+        return response
 
 
 class InitiativeDetailView(EmpresaContextMixin, DetailView):
